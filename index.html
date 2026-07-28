@@ -3,7 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Il mio atlante — mappa dei viaggi</title>
+<title>Il nostro atlante — mappa dei viaggi</title>
+
+<!-- ==========================================================
+     INSTALLAZIONE SUL TELEFONO (PWA)
+     Il manifest descrive l'app al sistema operativo: nome,
+     icona, colori. I meta 'apple-' servono a iOS, che il
+     manifest lo legge solo in parte.
+     ========================================================== -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1f5731">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atlante">
+<link rel="apple-touch-icon" href="./icona-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icona-192.png">
 
 <!-- Leaflet: libreria per la mappa interattiva -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -408,6 +423,41 @@
   }
   #toast.visibile { opacity: 1; }
 
+  /* ==========================================================
+     AVVISO DI NUOVA VERSIONE
+     Compare quando il service worker ha scaricato un
+     aggiornamento: resta finché non si ricarica
+     ========================================================== */
+  #avviso-aggiornamento {
+    position: fixed;
+    left: 10px; right: 10px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 3500;
+    max-width: 440px;
+    margin: 0 auto;
+    background: var(--inchiostro);
+    color: #fff;
+    border-radius: var(--raggio);
+    box-shadow: var(--ombra);
+    padding: 12px 12px 12px 16px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  #avviso-aggiornamento.visibile { display: flex; }
+  #avviso-aggiornamento button {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #bottone-ricarica { background: var(--verde); color: #fff; }
+  #bottone-rimanda { background: transparent; color: #b9c2bc; padding: 8px 4px; }
+
   /* Su schermi larghi le barre restano compatte a sinistra */
   @media (min-width: 700px) {
     #barra-alta, #barra-bassa { left: 20px; right: auto; width: 380px; }
@@ -497,6 +547,13 @@
 
 <div id="toast"></div>
 
+<!-- Avviso di nuova versione disponibile -->
+<div id="avviso-aggiornamento">
+  <span style="flex:1">C'è una versione aggiornata dell'atlante.</span>
+  <button id="bottone-rimanda">Dopo</button>
+  <button id="bottone-ricarica">Ricarica</button>
+</div>
+
 <!-- Schermata di accesso: sopra ogni cosa finché non si entra -->
 <div id="accesso">
   <div id="riquadro-accesso">
@@ -518,6 +575,53 @@
     <div id="errore-accesso"></div>
   </div>
 </div>
+
+<!-- ============================================================
+     REGISTRAZIONE DEL SERVICE WORKER
+     ------------------------------------------------------------
+     Script separato e ordinario (non un modulo): riguarda
+     l'installazione dell'app, non la mappa, e deve poter
+     funzionare anche se il resto fallisse.
+     ============================================================ -->
+<script>
+(function registraServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;   // browser troppo vecchio: l'app funziona lo stesso
+
+  window.addEventListener("load", async () => {
+    try {
+      const registrazione = await navigator.serviceWorker.register("./sw.js");
+
+      // Quando il service worker trova una versione nuova, la scarica
+      // in silenzio e avvisa. Non si ricarica da soli: l'utente
+      // potrebbe avere il pannello aperto a metà compilazione.
+      registrazione.addEventListener("updatefound", () => {
+        const nuovo = registrazione.installing;
+        if (!nuovo) return;
+        nuovo.addEventListener("statechange", () => {
+          // 'installed' con un controller già attivo = aggiornamento,
+          // non prima installazione
+          if (nuovo.state === "installed" && navigator.serviceWorker.controller) {
+            document.getElementById("avviso-aggiornamento").classList.add("visibile");
+          }
+        });
+      });
+
+      // Controlla la presenza di aggiornamenti a ogni ritorno sull'app
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") registrazione.update();
+      });
+    } catch (e) {
+      console.error("Service worker non registrato:", e);
+    }
+  });
+
+  document.getElementById("bottone-ricarica")
+    .addEventListener("click", () => location.reload());
+  document.getElementById("bottone-rimanda")
+    .addEventListener("click", () =>
+      document.getElementById("avviso-aggiornamento").classList.remove("visibile"));
+})();
+</script>
 
 <script type="module">
 "use strict";
