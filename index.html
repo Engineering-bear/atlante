@@ -41,7 +41,63 @@
   #mappa { position: fixed; inset: 0; z-index: 1; }
 
   /* ==========================================================
-     BARRA SUPERIORE: ricerca + contatori
+     SCHERMATA DI ACCESSO
+     Copre tutto finché non si è autenticati
+     ========================================================== */
+  #accesso {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    background: linear-gradient(160deg, #1f5731, #24312a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #accesso.nascosto { display: none; }
+
+  #riquadro-accesso {
+    background: var(--carta);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.3);
+    padding: 26px 22px calc(22px + env(safe-area-inset-bottom));
+    width: 100%;
+    max-width: 380px;
+  }
+  #riquadro-accesso h1 {
+    margin: 0 0 4px;
+    font-size: 20px;
+  }
+  #riquadro-accesso p.sottotitolo {
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: var(--grigio);
+  }
+  #bottone-entra {
+    width: 100%;
+    border: none;
+    border-radius: var(--raggio);
+    background: var(--inchiostro);
+    color: #fff;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  #bottone-entra:disabled { opacity: .55; cursor: default; }
+  #errore-accesso {
+    display: none;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #b3392c;
+    background: #fbe9e7;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  /* ==========================================================
+     BARRA SUPERIORE: ricerca + contatori + utente
      ========================================================== */
   #barra-alta {
     position: fixed;
@@ -106,9 +162,14 @@
   #risultati-ricerca button:last-child { border-bottom: none; }
   #risultati-ricerca button:hover { background: #f4f6f5; }
 
-  /* Chip con i contatori: paesi visitati e luoghi totali */
-  #contatori {
-    align-self: flex-start;
+  /* Riga con contatori e nome di chi è collegato */
+  #riga-stato {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .chip {
     background: var(--carta);
     border-radius: 999px;
     box-shadow: var(--ombra);
@@ -117,6 +178,32 @@
     color: var(--grigio);
   }
   #contatori strong { color: var(--verde-scuro); }
+  #chip-utente {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 4px 14px;
+  }
+  #nome-utente { font-weight: 600; color: var(--inchiostro); }
+  #bottone-esci {
+    border: none;
+    background: #eef0ef;
+    color: var(--inchiostro);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  /* Pallino che segnala la connessione al database */
+  #spia-rete {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--verde);
+    display: inline-block;
+    margin-right: 2px;
+  }
+  #spia-rete.offline { background: var(--ambra); }
 
   /* ==========================================================
      PULSANTI IN BASSO: legenda + backup
@@ -218,7 +305,6 @@
     color: var(--grigio);
   }
   #scelta-stato input { display: none; }
-  #scelta-stato input:checked + span { color: inherit; }
   #scelta-stato label:has(#stato-visitato:checked) {
     border-color: var(--verde);
     color: var(--verde-scuro);
@@ -252,6 +338,13 @@
   .campo input:focus, .campo textarea:focus { border-color: var(--verde); }
   .campo textarea { resize: vertical; min-height: 70px; }
 
+  /* Riga in fondo al pannello con la storia del luogo */
+  #firma-pannello {
+    font-size: 12px;
+    color: var(--grigio);
+    margin-top: 4px;
+  }
+
   #azioni-pannello { display: flex; gap: 8px; margin-top: 16px; }
   #azioni-pannello button {
     flex: 1;
@@ -272,6 +365,13 @@
   .popup-luogo h3 { margin: 0 0 2px; font-size: 16px; }
   .popup-luogo .sotto { color: var(--grigio); font-size: 12px; margin-bottom: 6px; }
   .popup-luogo .note { white-space: pre-wrap; margin: 6px 0; }
+  .popup-luogo .firma {
+    color: var(--grigio);
+    font-size: 11px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--bordo);
+  }
   .popup-luogo a { color: var(--verde-scuro); word-break: break-all; }
   .popup-azioni { display: flex; gap: 6px; margin-top: 10px; }
   .popup-azioni button {
@@ -308,7 +408,7 @@
   }
   #toast.visibile { opacity: 1; }
 
-  /* Su schermi larghi la legenda resta compatta a sinistra */
+  /* Su schermi larghi le barre restano compatte a sinistra */
   @media (min-width: 700px) {
     #barra-alta, #barra-bassa { left: 20px; right: auto; width: 380px; }
   }
@@ -318,7 +418,7 @@
 
 <div id="mappa"></div>
 
-<!-- Barra superiore: ricerca e contatori -->
+<!-- Barra superiore: ricerca, contatori, utente collegato -->
 <div id="barra-alta">
   <div id="casella-ricerca">
     <input id="campo-ricerca" type="text" placeholder="Cerca una località…"
@@ -326,7 +426,14 @@
     <button id="bottone-ricerca" title="Cerca">🔍</button>
   </div>
   <div id="risultati-ricerca"></div>
-  <div id="contatori">Carico i tuoi luoghi…</div>
+  <div id="riga-stato">
+    <div class="chip" id="contatori">Carico i luoghi…</div>
+    <div class="chip" id="chip-utente">
+      <span id="spia-rete" title="Stato della connessione"></span>
+      <span id="nome-utente"></span>
+      <button id="bottone-esci">Esci</button>
+    </div>
+  </div>
 </div>
 
 <!-- Barra inferiore: legenda e backup -->
@@ -380,6 +487,8 @@
     <input id="campo-link" type="url" placeholder="https://…">
   </div>
 
+  <div id="firma-pannello"></div>
+
   <div id="azioni-pannello">
     <button id="bottone-annulla">Annulla</button>
     <button id="bottone-salva">Salva</button>
@@ -388,19 +497,79 @@
 
 <div id="toast"></div>
 
-<script>
+<!-- Schermata di accesso: sopra ogni cosa finché non si entra -->
+<div id="accesso">
+  <div id="riquadro-accesso">
+    <h1>Il nostro atlante</h1>
+    <p class="sottotitolo">Entra per vedere e aggiornare la mappa.</p>
+
+    <div class="campo">
+      <label for="campo-email">Email</label>
+      <input id="campo-email" type="email" autocomplete="username"
+             enterkeyhint="next" placeholder="nome@esempio.it">
+    </div>
+    <div class="campo">
+      <label for="campo-password">Password</label>
+      <input id="campo-password" type="password" autocomplete="current-password"
+             enterkeyhint="go" placeholder="••••••••">
+    </div>
+
+    <button id="bottone-entra">Entra</button>
+    <div id="errore-accesso"></div>
+  </div>
+</div>
+
+<script type="module">
 "use strict";
 
 /* ============================================================
-   COSTANTI E STATO DELL'APPLICAZIONE
+   LIBRERIE FIREBASE
+   ------------------------------------------------------------
+   Caricate come moduli dal CDN ufficiale: nessun file da
+   installare, ma serve la connessione al primo avvio.
    ============================================================ */
 
-const CHIAVE_ARCHIVIO = "atlante:luoghi";
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot,
+  serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+/* ============================================================
+   CONFIGURAZIONE
+   ============================================================ */
+
+const CONFIG_FIREBASE = {
+  apiKey: "AIzaSyCOUQP_iWThRYg_bvBkesLvhOw6WdMkVYE",
+  authDomain: "atlante-viaggi.firebaseapp.com",
+  projectId: "atlante-viaggi",
+  storageBucket: "atlante-viaggi.firebasestorage.app",
+  messagingSenderId: "883248356326",
+  appId: "1:883248356326:web:49456ab4536f6445c41427"
+};
+
+// Nomi da mostrare al posto degli identificativi tecnici
+const NOMI_UTENTI = {
+  "Zv33bRfWvkfdvLOsXVWihGAVO262": "Topì",
+  "5LEdz7VGmNcbgf7cq4ya3NUu2vD3": "Balù"
+};
+
+const NOME_COLLEZIONE = "luoghi";
 const URL_CONFINI = "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json";
 const URL_NOMINATIM = "https://nominatim.openstreetmap.org";
 
-// Elenco dei luoghi salvati. Ogni luogo è un oggetto:
-// { id, lat, lng, stato, citta, paese, codicePaese (ISO2), data, note, link }
+/* ============================================================
+   STATO DELL'APPLICAZIONE
+   ============================================================ */
+
+// Copia locale dei luoghi. Ogni luogo è un oggetto:
+// { id, lat, lng, stato, citta, paese, codicePaese, data, note, link,
+//   creatoDa, creatoIl, modificatoDa, modificatoIl }
 let luoghi = [];
 
 // Riferimenti Leaflet
@@ -409,60 +578,14 @@ let gruppoMarker;               // layer che contiene tutti i marker
 let livelloConfini = null;      // layer GeoJSON dei confini nazionali
 const markerPerId = new Map();  // id luogo -> marker, per aggiornamenti mirati
 
+// Firebase
+let auth, db, raccoltaLuoghi;
+let utente = null;              // utente collegato
+let fermaAscolto = null;        // funzione per chiudere l'ascolto in tempo reale
+
 // Luogo in corso di inserimento/modifica nel pannello
 let bozza = null;               // { lat, lng, codicePaese, idInModifica|null }
 let markerProvvisorio = null;   // segnaposto mostrato durante l'inserimento
-
-/* ============================================================
-   ARCHIVIO: persistenza dei dati
-   ------------------------------------------------------------
-   Nell'anteprima dentro Claude è disponibile window.storage;
-   nel browser normale si usa localStorage. Questo modulo
-   nasconde la differenza al resto del codice.
-   ============================================================ */
-
-const Archivio = {
-  usaArtifact: typeof window.storage !== "undefined",
-
-  async carica() {
-    if (this.usaArtifact) {
-      try {
-        const r = await window.storage.get(CHIAVE_ARCHIVIO);
-        return r && r.value ? JSON.parse(r.value) : [];
-      } catch (e) {
-        // Chiave assente al primo avvio: nessun dato, nessun errore
-        return [];
-      }
-    }
-    try {
-      const testo = localStorage.getItem(CHIAVE_ARCHIVIO);
-      return testo ? JSON.parse(testo) : [];
-    } catch (e) {
-      console.error("Lettura archivio fallita:", e);
-      return [];
-    }
-  },
-
-  async salva(elenco) {
-    const testo = JSON.stringify(elenco);
-    if (this.usaArtifact) {
-      try {
-        await window.storage.set(CHIAVE_ARCHIVIO, testo);
-        return true;
-      } catch (e) {
-        console.error("Salvataggio (artifact) fallito:", e);
-        return false;
-      }
-    }
-    try {
-      localStorage.setItem(CHIAVE_ARCHIVIO, testo);
-      return true;
-    } catch (e) {
-      console.error("Salvataggio fallito:", e);
-      return false;
-    }
-  }
-};
 
 /* ============================================================
    MAPPA ISO2 -> ISO3
@@ -521,9 +644,24 @@ function formattaData(iso) {
   return `${g}/${m}/${a}`;
 }
 
-// Genera un id univoco per un luogo
-function nuovoId() {
-  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+// Nome leggibile a partire dall'identificativo dell'utente
+function nomeDi(uid) {
+  if (!uid) return "";
+  return NOMI_UTENTI[uid] || "un altro utente";
+}
+
+/* Un istante salvato può presentarsi in tre forme:
+   - Timestamp di Firestore (dato confermato dal server)
+   - null (scrittura appena fatta, non ancora confermata)
+   - stringa ISO (dato arrivato da un backup importato)
+   Questa funzione le riporta tutte a una data leggibile. */
+function formattaIstante(valore) {
+  if (!valore) return "";
+  let data;
+  if (typeof valore.toDate === "function") data = valore.toDate();
+  else data = new Date(valore);
+  if (isNaN(data)) return "";
+  return data.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /* ============================================================
@@ -567,7 +705,21 @@ function coloreStato(stato) {
   return stato === "visitato" ? "#2e7d46" : "#d97b1f";
 }
 
-// Crea (o ricrea) il marker di un luogo con il suo popup
+// Testo della firma: chi ha aggiunto il luogo e chi lo ha modificato
+function testoFirma(luogo) {
+  const pezzi = [];
+  if (luogo.creatoDa) {
+    const quando = formattaIstante(luogo.creatoIl);
+    pezzi.push(`Aggiunto da ${nomeDi(luogo.creatoDa)}${quando ? " il " + quando : ""}`);
+  }
+  if (luogo.modificatoDa) {
+    const quando = formattaIstante(luogo.modificatoIl);
+    pezzi.push(`modificato da ${nomeDi(luogo.modificatoDa)}${quando ? " il " + quando : ""}`);
+  }
+  return pezzi.join(" · ");
+}
+
+// Crea il marker di un luogo con il suo popup
 function creaMarker(luogo) {
   const marker = L.circleMarker([luogo.lat, luogo.lng], {
     radius: 9,
@@ -577,8 +729,10 @@ function creaMarker(luogo) {
     weight: 2.5
   });
 
-  // Il popup viene costruito con elementi DOM (non stringhe HTML)
-  // così i testi inseriti dall'utente sono sempre mostrati come testo
+  // Il popup viene costruito con elementi DOM (non stringhe HTML) così i
+  // testi inseriti dagli utenti sono sempre mostrati come testo.
+  // È una funzione: viene rieseguita a ogni apertura, quindi mostra
+  // sempre i dati aggiornati anche dopo una modifica arrivata dall'altro.
   marker.bindPopup(() => {
     const box = document.createElement("div");
     box.className = "popup-luogo";
@@ -629,21 +783,91 @@ function creaMarker(luogo) {
     azioni.appendChild(btnElimina);
     box.appendChild(azioni);
 
+    const firma = testoFirma(luogo);
+    if (firma) {
+      const riga = document.createElement("div");
+      riga.className = "firma";
+      riga.textContent = firma;
+      box.appendChild(riga);
+    }
+
     return box;
   });
 
   return marker;
 }
 
-// Ridisegna tutti i marker (usato all'avvio e dopo l'import)
-function ridisegnaMarker() {
+/* ============================================================
+   SINCRONIZZAZIONE IN TEMPO REALE
+   ------------------------------------------------------------
+   Un solo ascoltatore sulla raccolta. Ogni cambiamento, che
+   arrivi da questo dispositivo o dall'altro, entra da qui.
+   ============================================================ */
+
+function avviaAscolto() {
+  if (fermaAscolto) return;
+
+  fermaAscolto = onSnapshot(raccoltaLuoghi,
+    istantanea => {
+      // La spia diventa ambra quando i dati mostrati non sono
+      // ancora confermati dal server (tipicamente: siamo offline)
+      const spia = document.getElementById("spia-rete");
+      spia.classList.toggle("offline", istantanea.metadata.fromCache);
+
+      for (const cambio of istantanea.docChanges()) {
+        const dati = { id: cambio.doc.id, ...cambio.doc.data() };
+        if (cambio.type === "removed") rimuoviInLocale(dati.id);
+        else inserisciOAggiornaInLocale(dati);
+      }
+
+      aggiornaColoriPaesi();
+      aggiornaContatori();
+    },
+    errore => {
+      console.error("Ascolto interrotto:", errore);
+      toast("Sincronizzazione interrotta: " + errore.code);
+    }
+  );
+}
+
+function chiudiAscolto() {
+  if (fermaAscolto) { fermaAscolto(); fermaAscolto = null; }
+}
+
+// Allinea la copia locale e il marker corrispondente
+function inserisciOAggiornaInLocale(dati) {
+  const esistente = luoghi.find(l => l.id === dati.id);
+
+  if (esistente) {
+    // Si aggiorna l'oggetto esistente senza sostituirlo: il popup
+    // del marker punta a questo oggetto e resta così sincronizzato
+    Object.assign(esistente, dati);
+    const marker = markerPerId.get(dati.id);
+    if (marker) {
+      marker.setLatLng([esistente.lat, esistente.lng]);
+      marker.setStyle({ fillColor: coloreStato(esistente.stato) });
+    }
+  } else {
+    luoghi.push(dati);
+    const marker = creaMarker(dati);
+    marker.addTo(gruppoMarker);
+    markerPerId.set(dati.id, marker);
+  }
+}
+
+function rimuoviInLocale(id) {
+  luoghi = luoghi.filter(l => l.id !== id);
+  const marker = markerPerId.get(id);
+  if (marker) gruppoMarker.removeLayer(marker);
+  markerPerId.delete(id);
+}
+
+// Svuota mappa e memoria (all'uscita dall'account)
+function svuotaTutto() {
+  luoghi = [];
   gruppoMarker.clearLayers();
   markerPerId.clear();
-  for (const luogo of luoghi) {
-    const marker = creaMarker(luogo);
-    marker.addTo(gruppoMarker);
-    markerPerId.set(luogo.id, marker);
-  }
+  aggiornaColoriPaesi();
 }
 
 /* ============================================================
@@ -664,6 +888,7 @@ function paesiVisitatiISO3() {
 
 // Scarica i confini e crea il layer (una sola volta)
 async function caricaConfini() {
+  if (livelloConfini) return;
   try {
     const risposta = await fetch(URL_CONFINI);
     if (!risposta.ok) throw new Error("HTTP " + risposta.status);
@@ -743,6 +968,7 @@ async function apriPannelloNuovo(lat, lng) {
   document.getElementById("campo-data").value = "";
   document.getElementById("campo-note").value = "";
   document.getElementById("campo-link").value = "";
+  document.getElementById("firma-pannello").textContent = "";
   mostraPannello(true);
 
   // Precompila città e paese con il reverse geocoding
@@ -776,6 +1002,7 @@ function apriPannelloModifica(id) {
   document.getElementById("campo-data").value = luogo.data || "";
   document.getElementById("campo-note").value = luogo.note || "";
   document.getElementById("campo-link").value = luogo.link || "";
+  document.getElementById("firma-pannello").textContent = testoFirma(luogo);
 
   mappa.closePopup();
   mostraPannello(true);
@@ -787,9 +1014,13 @@ function chiudiPannello() {
   bozza = null;
 }
 
-// Salva il luogo (nuovo o modificato)
-async function salvaLuogo() {
-  if (!bozza) return;
+/* Salva il luogo (nuovo o modificato).
+   Non si aspetta la conferma del server: con la cache offline
+   attiva quella conferma può arrivare molto dopo, o solo al
+   ritorno della connessione. Il marker compare comunque subito,
+   perché l'ascoltatore reagisce già alla scrittura locale. */
+function salvaLuogo() {
+  if (!bozza || !utente) return;
 
   const stato = document.getElementById("stato-visitato").checked ? "visitato" : "desiderio";
   const dati = {
@@ -801,51 +1032,54 @@ async function salvaLuogo() {
     stato
   };
 
+  let operazione;
+
   if (bozza.idInModifica) {
-    // Aggiorna il luogo esistente
-    const luogo = luoghi.find(l => l.id === bozza.idInModifica);
-    if (!luogo) return;
-    Object.assign(luogo, dati);
-    // Il marker cambia colore se è cambiata la categoria
-    const marker = markerPerId.get(luogo.id);
-    if (marker) marker.setStyle({ fillColor: coloreStato(luogo.stato) });
+    // Modifica: si registra chi ha messo mano al luogo e quando
+    operazione = updateDoc(doc(db, NOME_COLLEZIONE, bozza.idInModifica), {
+      ...dati,
+      modificatoDa: utente.uid,
+      modificatoIl: serverTimestamp()
+    });
   } else {
-    // Nuovo luogo
-    const luogo = {
-      id: nuovoId(),
+    // Nuovo luogo: si registra chi lo ha aggiunto
+    operazione = addDoc(raccoltaLuoghi, {
       lat: bozza.lat,
       lng: bozza.lng,
-      codicePaese: bozza.codicePaese,
-      ...dati
-    };
-    luoghi.push(luogo);
-    const marker = creaMarker(luogo);
-    marker.addTo(gruppoMarker);
-    markerPerId.set(luogo.id, marker);
+      codicePaese: bozza.codicePaese || "",
+      ...dati,
+      creatoDa: utente.uid,
+      creatoIl: serverTimestamp(),
+      modificatoDa: null,
+      modificatoIl: null
+    });
   }
 
-  const ok = await Archivio.salva(luoghi);
-  aggiornaColoriPaesi();
-  aggiornaContatori();
+  operazione.catch(e => {
+    console.error("Scrittura fallita:", e);
+    toast("Salvataggio non riuscito: " + (e.code || e.message));
+  });
+
   chiudiPannello();
-  toast(ok ? "Luogo salvato" : "Salvato in memoria, ma la scrittura su disco è fallita");
+  toast("Luogo salvato");
 }
 
 // Elimina un luogo dopo conferma
-async function eliminaLuogo(id) {
+function eliminaLuogo(id) {
   const luogo = luoghi.find(l => l.id === id);
   if (!luogo) return;
+
   const nome = luogo.citta || "questo luogo";
-  if (!confirm(`Eliminare "${nome}"?`)) return;
+  const avviso = luogo.creatoDa && luogo.creatoDa !== (utente && utente.uid)
+    ? `\nÈ stato aggiunto da ${nomeDi(luogo.creatoDa)} e sparirà anche dalla sua mappa.`
+    : "\nSparirà anche dall'altra mappa.";
+  if (!confirm(`Eliminare "${nome}"?${avviso}`)) return;
 
-  luoghi = luoghi.filter(l => l.id !== id);
-  const marker = markerPerId.get(id);
-  if (marker) gruppoMarker.removeLayer(marker);
-  markerPerId.delete(id);
+  deleteDoc(doc(db, NOME_COLLEZIONE, id)).catch(e => {
+    console.error("Eliminazione fallita:", e);
+    toast("Eliminazione non riuscita: " + (e.code || e.message));
+  });
 
-  await Archivio.salva(luoghi);
-  aggiornaColoriPaesi();
-  aggiornaContatori();
   mappa.closePopup();
   toast("Luogo eliminato");
 }
@@ -896,11 +1130,18 @@ async function eseguiRicerca() {
    ============================================================ */
 
 function esportaBackup() {
+  // Le date di sistema vengono convertite in testo leggibile da qualunque programma
+  const luoghiEsportati = luoghi.map(l => ({
+    ...l,
+    creatoIl: l.creatoIl && l.creatoIl.toDate ? l.creatoIl.toDate().toISOString() : (l.creatoIl || null),
+    modificatoIl: l.modificatoIl && l.modificatoIl.toDate ? l.modificatoIl.toDate().toISOString() : (l.modificatoIl || null)
+  }));
+
   const contenuto = {
     app: "atlante-viaggi",
-    versione: 1,
+    versione: 2,
     esportato: new Date().toISOString(),
-    luoghi
+    luoghi: luoghiEsportati
   };
   const blob = new Blob([JSON.stringify(contenuto, null, 2)],
                         { type: "application/json" });
@@ -914,9 +1155,13 @@ function esportaBackup() {
   toast("Backup esportato");
 }
 
+/* L'importazione sostituisce l'intero archivio CONDIVISO: cancella
+   i luoghi presenti e scrive quelli del file. Si usa una scrittura
+   in blocco (batch) così l'operazione riesce tutta o non riesce
+   affatto, senza lasciare la mappa a metà. */
 function importaBackup(file) {
   const lettore = new FileReader();
-  lettore.onload = async () => {
+  lettore.onload = () => {
     try {
       const dati = JSON.parse(lettore.result);
       // Accetta sia il formato completo sia un semplice array di luoghi
@@ -928,19 +1173,49 @@ function importaBackup(file) {
         l && typeof l.lat === "number" && typeof l.lng === "number");
       if (!validi.length) throw new Error("nessun luogo valido nel file");
 
-      const msg = `Importare ${validi.length} luoghi?\n` +
-                  `ATTENZIONE: i ${luoghi.length} luoghi attuali verranno sostituiti.`;
+      // Limite tecnico di una scrittura in blocco: 500 operazioni,
+      // e qui ogni luogo vecchio da cancellare ne occupa una
+      if (validi.length + luoghi.length > 480) {
+        throw new Error("archivio troppo grande per un'unica importazione");
+      }
+
+      const msg = `Importare ${validi.length} luoghi?\n\n` +
+                  `ATTENZIONE: i ${luoghi.length} luoghi attuali verranno ` +
+                  `cancellati, sulla tua mappa e su quella di ${nomeAltroUtente()}.`;
       if (!confirm(msg)) return;
 
-      // Garantisce che ogni luogo abbia un id
-      for (const l of validi) if (!l.id) l.id = nuovoId();
+      const blocco = writeBatch(db);
+      for (const vecchio of luoghi) {
+        blocco.delete(doc(db, NOME_COLLEZIONE, vecchio.id));
+      }
+      for (const l of validi) {
+        // L'id del file non viene riusato: se ne genera uno nuovo
+        blocco.set(doc(raccoltaLuoghi), {
+          lat: l.lat,
+          lng: l.lng,
+          stato: l.stato === "desiderio" ? "desiderio" : "visitato",
+          citta: l.citta || "",
+          paese: l.paese || "",
+          codicePaese: l.codicePaese || "",
+          data: l.data || "",
+          note: l.note || "",
+          link: l.link || "",
+          // Se il backup conserva la paternità la si mantiene,
+          // altrimenti il luogo risulta importato da chi sta operando
+          creatoDa: l.creatoDa || utente.uid,
+          creatoIl: l.creatoIl || null,
+          modificatoDa: utente.uid,
+          modificatoIl: serverTimestamp()
+        });
+      }
 
-      luoghi = validi;
-      await Archivio.salva(luoghi);
-      ridisegnaMarker();
-      aggiornaColoriPaesi();
-      aggiornaContatori();
-      toast(`Importati ${validi.length} luoghi`);
+      blocco.commit()
+        .then(() => toast(`Importati ${validi.length} luoghi`))
+        .catch(e => {
+          console.error("Importazione fallita:", e);
+          toast("Importazione non riuscita: " + (e.code || e.message));
+        });
+
     } catch (e) {
       toast("File non valido: " + e.message);
     }
@@ -948,11 +1223,86 @@ function importaBackup(file) {
   lettore.readAsText(file);
 }
 
+// Nome dell'altra persona, per gli avvisi
+function nomeAltroUtente() {
+  const altri = Object.entries(NOMI_UTENTI)
+    .filter(([uid]) => !utente || uid !== utente.uid)
+    .map(([, nome]) => nome);
+  return altri.length ? altri.join(" e ") : "l'altro utente";
+}
+
+/* ============================================================
+   ACCESSO
+   ============================================================ */
+
+function mostraErroreAccesso(testo) {
+  const el = document.getElementById("errore-accesso");
+  el.textContent = testo;
+  el.style.display = testo ? "block" : "none";
+}
+
+// Traduce i codici di errore di Firebase in messaggi comprensibili
+function messaggioErrore(codice) {
+  switch (codice) {
+    case "auth/invalid-email":
+      return "Indirizzo email non valido.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Email o password non corretti.";
+    case "auth/too-many-requests":
+      return "Troppi tentativi. Riprova tra qualche minuto.";
+    case "auth/network-request-failed":
+      return "Nessuna connessione: il primo accesso richiede la rete.";
+    case "auth/unauthorized-domain":
+      return "Questo indirizzo non è fra i domini autorizzati in Firebase.";
+    default:
+      return "Accesso non riuscito (" + codice + ").";
+  }
+}
+
+async function entra() {
+  const email = document.getElementById("campo-email").value.trim();
+  const password = document.getElementById("campo-password").value;
+  if (!email || !password) {
+    mostraErroreAccesso("Servono email e password.");
+    return;
+  }
+
+  const bottone = document.getElementById("bottone-entra");
+  bottone.disabled = true;
+  bottone.textContent = "Accesso in corso…";
+  mostraErroreAccesso("");
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    // Il resto avviene in onAuthStateChanged
+  } catch (e) {
+    console.error("Accesso fallito:", e);
+    mostraErroreAccesso(messaggioErrore(e.code));
+  } finally {
+    bottone.disabled = false;
+    bottone.textContent = "Entra";
+  }
+}
+
+async function esci() {
+  if (!confirm("Uscire dall'account?")) return;
+  chiudiAscolto();
+  svuotaTutto();
+  await signOut(auth);
+}
+
+function mostraAccesso(mostra) {
+  document.getElementById("accesso").classList.toggle("nascosto", !mostra);
+  if (mostra) document.getElementById("campo-password").value = "";
+}
+
 /* ============================================================
    AVVIO
    ============================================================ */
 
-async function avvia() {
+function preparaMappa() {
   // Mappa centrata sul mondo, con limiti per non "perderla" trascinando
   mappa = L.map("mappa", {
     center: [30, 10],
@@ -972,11 +1322,24 @@ async function avvia() {
 
   // Tap/click sulla mappa = proposta di nuovo luogo
   mappa.on("click", e => {
+    if (!utente) return;
     // Se il pannello è già aperto non si apre un secondo inserimento
     if (document.getElementById("pannello").style.display === "block") return;
     nascondiRisultati();
     apriPannelloNuovo(e.latlng.lat, e.latlng.lng);
   });
+}
+
+function collegaComandi() {
+  // Accesso
+  document.getElementById("bottone-entra").addEventListener("click", entra);
+  document.getElementById("campo-password").addEventListener("keydown", e => {
+    if (e.key === "Enter") entra();
+  });
+  document.getElementById("campo-email").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("campo-password").focus();
+  });
+  document.getElementById("bottone-esci").addEventListener("click", esci);
 
   // Pannello
   document.getElementById("bottone-salva").addEventListener("click", salvaLuogo);
@@ -997,12 +1360,41 @@ async function avvia() {
     if (e.target.files.length) importaBackup(e.target.files[0]);
     e.target.value = ""; // permette di reimportare lo stesso file
   });
+}
 
-  // Dati salvati e confini
-  luoghi = await Archivio.carica();
-  ridisegnaMarker();
-  aggiornaContatori();
-  caricaConfini(); // asincrono, senza bloccare l'avvio
+function avvia() {
+  preparaMappa();
+  collegaComandi();
+
+  const app = initializeApp(CONFIG_FIREBASE);
+  auth = getAuth(app);
+
+  // La cache persistente permette di consultare e modificare la mappa
+  // anche senza rete: le scritture partono al ritorno della connessione.
+  // "multiple tab" evita conflitti se l'app è aperta in più schede.
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+  raccoltaLuoghi = collection(db, NOME_COLLEZIONE);
+
+  // Unico punto in cui si decide se mostrare la mappa o l'accesso.
+  // Viene richiamato anche all'avvio, recuperando la sessione salvata.
+  onAuthStateChanged(auth, u => {
+    utente = u;
+    if (u) {
+      document.getElementById("nome-utente").textContent = nomeDi(u.uid);
+      mostraAccesso(false);
+      avviaAscolto();
+      caricaConfini();
+      // Leaflet ha disegnato la mappa mentre era coperta: va ridimensionata
+      setTimeout(() => mappa.invalidateSize(), 60);
+    } else {
+      chiudiAscolto();
+      svuotaTutto();
+      aggiornaContatori();
+      mostraAccesso(true);
+    }
+  });
 }
 
 avvia();
