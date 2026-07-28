@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Il mio atlante — mappa dei viaggi</title>
+
+<!-- Leaflet: libreria per la mappa interattiva -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<style>
+  /* ==========================================================
+     PALETTE E VARIABILI
+     verde  = luoghi visitati / paesi colorati
+     ambra  = luoghi da visitare (desideri)
+     ========================================================== */
+  :root {
+    --verde: #2e7d46;
+    --verde-scuro: #1f5731;
+    --ambra: #d97b1f;
+    --ambra-scuro: #a85c12;
+    --inchiostro: #24312a;
+    --carta: #ffffff;
+    --grigio: #6b746f;
+    --bordo: #e3e6e4;
+    --ombra: 0 4px 18px rgba(20, 35, 25, 0.18);
+    --raggio: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: var(--inchiostro);
+  }
+
+  /* La mappa occupa tutto lo schermo, il resto galleggia sopra */
+  #mappa { position: fixed; inset: 0; z-index: 1; }
+
+  /* ==========================================================
+     BARRA SUPERIORE: ricerca + contatori
+     ========================================================== */
+  #barra-alta {
+    position: fixed;
+    top: max(10px, env(safe-area-inset-top));
+    left: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  #casella-ricerca {
+    display: flex;
+    align-items: center;
+    background: var(--carta);
+    border-radius: 999px;
+    box-shadow: var(--ombra);
+    padding: 4px 6px 4px 16px;
+  }
+  #campo-ricerca {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;       /* 16px evita lo zoom automatico su iOS */
+    background: transparent;
+    min-width: 0;
+  }
+  #bottone-ricerca {
+    border: none;
+    background: var(--inchiostro);
+    color: #fff;
+    border-radius: 999px;
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Risultati della ricerca, sotto la casella */
+  #risultati-ricerca {
+    background: var(--carta);
+    border-radius: var(--raggio);
+    box-shadow: var(--ombra);
+    overflow: hidden;
+    display: none;
+  }
+  #risultati-ricerca button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    padding: 12px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--bordo);
+  }
+  #risultati-ricerca button:last-child { border-bottom: none; }
+  #risultati-ricerca button:hover { background: #f4f6f5; }
+
+  /* Chip con i contatori: paesi visitati e luoghi totali */
+  #contatori {
+    align-self: flex-start;
+    background: var(--carta);
+    border-radius: 999px;
+    box-shadow: var(--ombra);
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--grigio);
+  }
+  #contatori strong { color: var(--verde-scuro); }
+
+  /* ==========================================================
+     PULSANTI IN BASSO: legenda + backup
+     ========================================================== */
+  #barra-bassa {
+    position: fixed;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 440px;
+    margin: 0 auto;
+    pointer-events: none; /* i figli riattivano i click */
+  }
+  #barra-bassa > * { pointer-events: auto; }
+
+  #legenda {
+    background: var(--carta);
+    border-radius: var(--raggio);
+    box-shadow: var(--ombra);
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .pallino {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 6px;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+    vertical-align: -1px;
+  }
+  .pallino.visitato { background: var(--verde); }
+  .pallino.desiderio { background: var(--ambra); }
+
+  #bottoni-backup { display: flex; flex-direction: column; gap: 8px; }
+  .bottone-tondo {
+    border: none;
+    background: var(--carta);
+    color: var(--inchiostro);
+    border-radius: 999px;
+    box-shadow: var(--ombra);
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .bottone-tondo:hover { background: #f4f6f5; }
+
+  /* ==========================================================
+     PANNELLO INSERIMENTO/MODIFICA (bottom sheet)
+     ========================================================== */
+  #velo {
+    position: fixed; inset: 0;
+    background: rgba(15, 25, 18, 0.35);
+    z-index: 1500;
+    display: none;
+  }
+  #pannello {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 2000;
+    background: var(--carta);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 30px rgba(20,35,25,.25);
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    max-width: 520px;
+    margin: 0 auto;
+    max-height: 82vh;
+    overflow-y: auto;
+    display: none;
+  }
+  #pannello h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
+  #coordinate-pannello {
+    font-size: 12px;
+    color: var(--grigio);
+    margin-bottom: 12px;
+  }
+
+  /* Selettore della categoria: due grandi bottoni radio */
+  #scelta-stato { display: flex; gap: 8px; margin-bottom: 14px; }
+  #scelta-stato label {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    border: 2px solid var(--bordo);
+    border-radius: var(--raggio);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--grigio);
+  }
+  #scelta-stato input { display: none; }
+  #scelta-stato input:checked + span { color: inherit; }
+  #scelta-stato label:has(#stato-visitato:checked) {
+    border-color: var(--verde);
+    color: var(--verde-scuro);
+    background: #eef7f0;
+  }
+  #scelta-stato label:has(#stato-desiderio:checked) {
+    border-color: var(--ambra);
+    color: var(--ambra-scuro);
+    background: #fdf3e7;
+  }
+
+  .campo { margin-bottom: 12px; }
+  .campo label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--grigio);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .campo input, .campo textarea {
+    width: 100%;
+    border: 1.5px solid var(--bordo);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+  }
+  .campo input:focus, .campo textarea:focus { border-color: var(--verde); }
+  .campo textarea { resize: vertical; min-height: 70px; }
+
+  #azioni-pannello { display: flex; gap: 8px; margin-top: 16px; }
+  #azioni-pannello button {
+    flex: 1;
+    border: none;
+    border-radius: var(--raggio);
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #bottone-salva { background: var(--inchiostro); color: #fff; }
+  #bottone-annulla { background: #eef0ef; color: var(--inchiostro); }
+
+  /* ==========================================================
+     POPUP DEI MARKER
+     ========================================================== */
+  .popup-luogo { font-size: 14px; min-width: 190px; }
+  .popup-luogo h3 { margin: 0 0 2px; font-size: 16px; }
+  .popup-luogo .sotto { color: var(--grigio); font-size: 12px; margin-bottom: 6px; }
+  .popup-luogo .note { white-space: pre-wrap; margin: 6px 0; }
+  .popup-luogo a { color: var(--verde-scuro); word-break: break-all; }
+  .popup-azioni { display: flex; gap: 6px; margin-top: 10px; }
+  .popup-azioni button {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .popup-azioni .modifica { background: #eef0ef; }
+  .popup-azioni .elimina { background: #fbe9e7; color: #b3392c; }
+
+  /* ==========================================================
+     TOAST: brevi messaggi di conferma
+     ========================================================== */
+  #toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--inchiostro);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    z-index: 3000;
+    opacity: 0;
+    transition: opacity .25s;
+    pointer-events: none;
+    max-width: 90vw;
+    text-align: center;
+  }
+  #toast.visibile { opacity: 1; }
+
+  /* Su schermi larghi la legenda resta compatta a sinistra */
+  @media (min-width: 700px) {
+    #barra-alta, #barra-bassa { left: 20px; right: auto; width: 380px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="mappa"></div>
+
+<!-- Barra superiore: ricerca e contatori -->
+<div id="barra-alta">
+  <div id="casella-ricerca">
+    <input id="campo-ricerca" type="text" placeholder="Cerca una località…"
+           autocomplete="off" enterkeyhint="search">
+    <button id="bottone-ricerca" title="Cerca">🔍</button>
+  </div>
+  <div id="risultati-ricerca"></div>
+  <div id="contatori">Carico i tuoi luoghi…</div>
+</div>
+
+<!-- Barra inferiore: legenda e backup -->
+<div id="barra-bassa">
+  <div id="legenda">
+    <span class="pallino visitato"></span>Visitato<br>
+    <span class="pallino desiderio"></span>Da visitare
+  </div>
+  <div id="bottoni-backup">
+    <button class="bottone-tondo" id="bottone-esporta">Esporta backup</button>
+    <button class="bottone-tondo" id="bottone-importa">Importa backup</button>
+    <input type="file" id="file-import" accept=".json,application/json" hidden>
+  </div>
+</div>
+
+<!-- Pannello di inserimento/modifica -->
+<div id="velo"></div>
+<div id="pannello">
+  <h2 id="titolo-pannello">Nuovo luogo</h2>
+  <div id="coordinate-pannello"></div>
+
+  <div id="scelta-stato">
+    <label>
+      <input type="radio" name="stato" id="stato-visitato" value="visitato" checked>
+      <span>✓ Visitato</span>
+    </label>
+    <label>
+      <input type="radio" name="stato" id="stato-desiderio" value="desiderio">
+      <span>★ Da visitare</span>
+    </label>
+  </div>
+
+  <div class="campo">
+    <label for="campo-citta">Città / luogo</label>
+    <input id="campo-citta" type="text" placeholder="Es. Kyoto">
+  </div>
+  <div class="campo">
+    <label for="campo-paese">Paese</label>
+    <input id="campo-paese" type="text" placeholder="Es. Giappone">
+  </div>
+  <div class="campo">
+    <label for="campo-data">Data</label>
+    <input id="campo-data" type="date">
+  </div>
+  <div class="campo">
+    <label for="campo-note">Note e ricordi</label>
+    <textarea id="campo-note" placeholder="Cosa vuoi ricordare di questo posto?"></textarea>
+  </div>
+  <div class="campo">
+    <label for="campo-link">Link</label>
+    <input id="campo-link" type="url" placeholder="https://…">
+  </div>
+
+  <div id="azioni-pannello">
+    <button id="bottone-annulla">Annulla</button>
+    <button id="bottone-salva">Salva</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   COSTANTI E STATO DELL'APPLICAZIONE
+   ============================================================ */
+
+const CHIAVE_ARCHIVIO = "atlante:luoghi";
+const URL_CONFINI = "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json";
+const URL_NOMINATIM = "https://nominatim.openstreetmap.org";
+
+// Elenco dei luoghi salvati. Ogni luogo è un oggetto:
+// { id, lat, lng, stato, citta, paese, codicePaese (ISO2), data, note, link }
+let luoghi = [];
+
+// Riferimenti Leaflet
+let mappa;                      // istanza della mappa
+let gruppoMarker;               // layer che contiene tutti i marker
+let livelloConfini = null;      // layer GeoJSON dei confini nazionali
+const markerPerId = new Map();  // id luogo -> marker, per aggiornamenti mirati
+
+// Luogo in corso di inserimento/modifica nel pannello
+let bozza = null;               // { lat, lng, codicePaese, idInModifica|null }
+let markerProvvisorio = null;   // segnaposto mostrato durante l'inserimento
+
+/* ============================================================
+   ARCHIVIO: persistenza dei dati
+   ------------------------------------------------------------
+   Nell'anteprima dentro Claude è disponibile window.storage;
+   nel browser normale si usa localStorage. Questo modulo
+   nasconde la differenza al resto del codice.
+   ============================================================ */
+
+const Archivio = {
+  usaArtifact: typeof window.storage !== "undefined",
+
+  async carica() {
+    if (this.usaArtifact) {
+      try {
+        const r = await window.storage.get(CHIAVE_ARCHIVIO);
+        return r && r.value ? JSON.parse(r.value) : [];
+      } catch (e) {
+        // Chiave assente al primo avvio: nessun dato, nessun errore
+        return [];
+      }
+    }
+    try {
+      const testo = localStorage.getItem(CHIAVE_ARCHIVIO);
+      return testo ? JSON.parse(testo) : [];
+    } catch (e) {
+      console.error("Lettura archivio fallita:", e);
+      return [];
+    }
+  },
+
+  async salva(elenco) {
+    const testo = JSON.stringify(elenco);
+    if (this.usaArtifact) {
+      try {
+        await window.storage.set(CHIAVE_ARCHIVIO, testo);
+        return true;
+      } catch (e) {
+        console.error("Salvataggio (artifact) fallito:", e);
+        return false;
+      }
+    }
+    try {
+      localStorage.setItem(CHIAVE_ARCHIVIO, testo);
+      return true;
+    } catch (e) {
+      console.error("Salvataggio fallito:", e);
+      return false;
+    }
+  }
+};
+
+/* ============================================================
+   MAPPA ISO2 -> ISO3
+   ------------------------------------------------------------
+   Nominatim restituisce il codice paese a 2 lettere (ISO2),
+   il GeoJSON dei confini usa quello a 3 lettere (ISO3).
+   ============================================================ */
+
+const ISO2_A_ISO3 = {
+  af:"AFG", al:"ALB", dz:"DZA", ad:"AND", ao:"AGO", ag:"ATG", ar:"ARG", am:"ARM",
+  au:"AUS", at:"AUT", az:"AZE", bs:"BHS", bh:"BHR", bd:"BGD", bb:"BRB", by:"BLR",
+  be:"BEL", bz:"BLZ", bj:"BEN", bt:"BTN", bo:"BOL", ba:"BIH", bw:"BWA", br:"BRA",
+  bn:"BRN", bg:"BGR", bf:"BFA", bi:"BDI", kh:"KHM", cm:"CMR", ca:"CAN", cv:"CPV",
+  cf:"CAF", td:"TCD", cl:"CHL", cn:"CHN", co:"COL", km:"COM", cg:"COG", cd:"COD",
+  cr:"CRI", ci:"CIV", hr:"HRV", cu:"CUB", cy:"CYP", cz:"CZE", dk:"DNK", dj:"DJI",
+  dm:"DMA", do:"DOM", ec:"ECU", eg:"EGY", sv:"SLV", gq:"GNQ", er:"ERI", ee:"EST",
+  sz:"SWZ", et:"ETH", fj:"FJI", fi:"FIN", fr:"FRA", ga:"GAB", gm:"GMB", ge:"GEO",
+  de:"DEU", gh:"GHA", gr:"GRC", gd:"GRD", gt:"GTM", gn:"GIN", gw:"GNB", gy:"GUY",
+  ht:"HTI", hn:"HND", hu:"HUN", is:"ISL", in:"IND", id:"IDN", ir:"IRN", iq:"IRQ",
+  ie:"IRL", il:"ISR", it:"ITA", jm:"JAM", jp:"JPN", jo:"JOR", kz:"KAZ", ke:"KEN",
+  ki:"KIR", kp:"PRK", kr:"KOR", kw:"KWT", kg:"KGZ", la:"LAO", lv:"LVA", lb:"LBN",
+  ls:"LSO", lr:"LBR", ly:"LBY", li:"LIE", lt:"LTU", lu:"LUX", mg:"MDG", mw:"MWI",
+  my:"MYS", mv:"MDV", ml:"MLI", mt:"MLT", mh:"MHL", mr:"MRT", mu:"MUS", mx:"MEX",
+  fm:"FSM", md:"MDA", mc:"MCO", mn:"MNG", me:"MNE", ma:"MAR", mz:"MOZ", mm:"MMR",
+  na:"NAM", nr:"NRU", np:"NPL", nl:"NLD", nz:"NZL", ni:"NIC", ne:"NER", ng:"NGA",
+  mk:"MKD", no:"NOR", om:"OMN", pk:"PAK", pw:"PLW", pa:"PAN", pg:"PNG", py:"PRY",
+  pe:"PER", ph:"PHL", pl:"POL", pt:"PRT", qa:"QAT", ro:"ROU", ru:"RUS", rw:"RWA",
+  kn:"KNA", lc:"LCA", vc:"VCT", ws:"WSM", sm:"SMR", st:"STP", sa:"SAU", sn:"SEN",
+  rs:"SRB", sc:"SYC", sl:"SLE", sg:"SGP", sk:"SVK", si:"SVN", sb:"SLB", so:"SOM",
+  za:"ZAF", ss:"SSD", es:"ESP", lk:"LKA", sd:"SDN", sr:"SUR", se:"SWE", ch:"CHE",
+  sy:"SYR", tw:"TWN", tj:"TJK", tz:"TZA", th:"THA", tl:"TLS", tg:"TGO", to:"TON",
+  tt:"TTO", tn:"TUN", tr:"TUR", tm:"TKM", tv:"TUV", ug:"UGA", ua:"UKR", ae:"ARE",
+  gb:"GBR", us:"USA", uy:"URY", uz:"UZB", vu:"VUT", va:"VAT", ve:"VEN", vn:"VNM",
+  ye:"YEM", zm:"ZMB", zw:"ZWE", ps:"PSE", xk:"KOS", gl:"GRL", eh:"ESH", fk:"FLK",
+  nc:"NCL", pf:"PYF", pr:"PRI", tf:"ATF", aq:"ATA"
+};
+
+/* ============================================================
+   UTILITÀ
+   ============================================================ */
+
+// Mostra un breve messaggio in basso
+let timerToast = null;
+function toast(messaggio) {
+  const el = document.getElementById("toast");
+  el.textContent = messaggio;
+  el.classList.add("visibile");
+  clearTimeout(timerToast);
+  timerToast = setTimeout(() => el.classList.remove("visibile"), 2600);
+}
+
+// Data ISO (aaaa-mm-gg) -> formato italiano leggibile
+function formattaData(iso) {
+  if (!iso) return "";
+  const [a, m, g] = iso.split("-");
+  return `${g}/${m}/${a}`;
+}
+
+// Genera un id univoco per un luogo
+function nuovoId() {
+  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+/* ============================================================
+   GEOCODING (Nominatim / OpenStreetMap)
+   ============================================================ */
+
+// Dato un punto, ricava città, paese e codice paese
+async function geocodificaInversa(lat, lng) {
+  try {
+    const url = `${URL_NOMINATIM}/reverse?format=jsonv2&lat=${lat}&lon=${lng}` +
+                `&zoom=10&addressdetails=1&accept-language=it`;
+    const risposta = await fetch(url);
+    if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+    const dati = await risposta.json();
+    const a = dati.address || {};
+    return {
+      citta: a.city || a.town || a.village || a.municipality || a.county || "",
+      paese: a.country || "",
+      codicePaese: a.country_code || ""
+    };
+  } catch (e) {
+    // Senza rete o servizio non raggiungibile: si compila a mano
+    return { citta: "", paese: "", codicePaese: "" };
+  }
+}
+
+// Ricerca per nome; restituisce al massimo 5 risultati
+async function cercaLocalita(testo) {
+  const url = `${URL_NOMINATIM}/search?format=jsonv2&limit=5&addressdetails=1` +
+              `&accept-language=it&q=${encodeURIComponent(testo)}`;
+  const risposta = await fetch(url);
+  if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+  return risposta.json();
+}
+
+/* ============================================================
+   MARKER E POPUP
+   ============================================================ */
+
+function coloreStato(stato) {
+  return stato === "visitato" ? "#2e7d46" : "#d97b1f";
+}
+
+// Crea (o ricrea) il marker di un luogo con il suo popup
+function creaMarker(luogo) {
+  const marker = L.circleMarker([luogo.lat, luogo.lng], {
+    radius: 9,
+    fillColor: coloreStato(luogo.stato),
+    fillOpacity: 1,
+    color: "#ffffff",
+    weight: 2.5
+  });
+
+  // Il popup viene costruito con elementi DOM (non stringhe HTML)
+  // così i testi inseriti dall'utente sono sempre mostrati come testo
+  marker.bindPopup(() => {
+    const box = document.createElement("div");
+    box.className = "popup-luogo";
+
+    const titolo = document.createElement("h3");
+    titolo.textContent = luogo.citta || "Luogo senza nome";
+    box.appendChild(titolo);
+
+    const sotto = document.createElement("div");
+    sotto.className = "sotto";
+    const pezzi = [];
+    if (luogo.paese) pezzi.push(luogo.paese);
+    if (luogo.data) pezzi.push(formattaData(luogo.data));
+    pezzi.push(luogo.stato === "visitato" ? "✓ visitato" : "★ da visitare");
+    sotto.textContent = pezzi.join(" · ");
+    box.appendChild(sotto);
+
+    if (luogo.note) {
+      const note = document.createElement("div");
+      note.className = "note";
+      note.textContent = luogo.note;
+      box.appendChild(note);
+    }
+
+    if (luogo.link) {
+      const link = document.createElement("a");
+      link.href = luogo.link;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Apri link";
+      box.appendChild(link);
+    }
+
+    const azioni = document.createElement("div");
+    azioni.className = "popup-azioni";
+
+    const btnModifica = document.createElement("button");
+    btnModifica.className = "modifica";
+    btnModifica.textContent = "Modifica";
+    btnModifica.addEventListener("click", () => apriPannelloModifica(luogo.id));
+
+    const btnElimina = document.createElement("button");
+    btnElimina.className = "elimina";
+    btnElimina.textContent = "Elimina";
+    btnElimina.addEventListener("click", () => eliminaLuogo(luogo.id));
+
+    azioni.appendChild(btnModifica);
+    azioni.appendChild(btnElimina);
+    box.appendChild(azioni);
+
+    return box;
+  });
+
+  return marker;
+}
+
+// Ridisegna tutti i marker (usato all'avvio e dopo l'import)
+function ridisegnaMarker() {
+  gruppoMarker.clearLayers();
+  markerPerId.clear();
+  for (const luogo of luoghi) {
+    const marker = creaMarker(luogo);
+    marker.addTo(gruppoMarker);
+    markerPerId.set(luogo.id, marker);
+  }
+}
+
+/* ============================================================
+   COLORAZIONE DEI PAESI VISITATI
+   ============================================================ */
+
+// Insieme dei codici ISO3 dei paesi con almeno un luogo visitato
+function paesiVisitatiISO3() {
+  const insieme = new Set();
+  for (const luogo of luoghi) {
+    if (luogo.stato === "visitato" && luogo.codicePaese) {
+      const iso3 = ISO2_A_ISO3[luogo.codicePaese.toLowerCase()];
+      if (iso3) insieme.add(iso3);
+    }
+  }
+  return insieme;
+}
+
+// Scarica i confini e crea il layer (una sola volta)
+async function caricaConfini() {
+  try {
+    const risposta = await fetch(URL_CONFINI);
+    if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+    const geojson = await risposta.json();
+
+    livelloConfini = L.geoJSON(geojson, {
+      interactive: false,          // i confini non catturano i click
+      style: () => ({ fillOpacity: 0, opacity: 0 })
+    }).addTo(mappa);
+
+    livelloConfini.bringToBack(); // i marker restano sopra
+    aggiornaColoriPaesi();
+  } catch (e) {
+    console.error("Confini non caricati:", e);
+    toast("Confini paesi non disponibili (serve la connessione)");
+  }
+}
+
+// Applica il colore ai paesi visitati, rende invisibili gli altri
+function aggiornaColoriPaesi() {
+  if (!livelloConfini) return;
+  const visitati = paesiVisitatiISO3();
+  livelloConfini.setStyle(feature => {
+    const visitato = visitati.has(feature.id);
+    return visitato
+      ? { fillColor: "#2e7d46", fillOpacity: 0.22, color: "#2e7d46", opacity: 0.5, weight: 1 }
+      : { fillOpacity: 0, opacity: 0 };
+  });
+}
+
+/* ============================================================
+   CONTATORI
+   ============================================================ */
+
+function aggiornaContatori() {
+  const el = document.getElementById("contatori");
+  const nPaesi = paesiVisitatiISO3().size;
+  const nVisitati = luoghi.filter(l => l.stato === "visitato").length;
+  const nDesideri = luoghi.length - nVisitati;
+  el.innerHTML = `<strong>${nPaesi}</strong> paesi · ` +
+                 `<strong>${nVisitati}</strong> visitati · ` +
+                 `<strong>${nDesideri}</strong> da visitare`;
+}
+
+/* ============================================================
+   PANNELLO DI INSERIMENTO E MODIFICA
+   ============================================================ */
+
+function mostraPannello(mostra) {
+  document.getElementById("pannello").style.display = mostra ? "block" : "none";
+  document.getElementById("velo").style.display = mostra ? "block" : "none";
+}
+
+function rimuoviMarkerProvvisorio() {
+  if (markerProvvisorio) {
+    mappa.removeLayer(markerProvvisorio);
+    markerProvvisorio = null;
+  }
+}
+
+// Apre il pannello per un NUOVO luogo nel punto toccato
+async function apriPannelloNuovo(lat, lng) {
+  bozza = { lat, lng, codicePaese: "", idInModifica: null };
+
+  // Segnaposto grigio nel punto scelto
+  rimuoviMarkerProvvisorio();
+  markerProvvisorio = L.circleMarker([lat, lng], {
+    radius: 9, fillColor: "#8a938e", fillOpacity: 1, color: "#fff", weight: 2.5
+  }).addTo(mappa);
+
+  document.getElementById("titolo-pannello").textContent = "Nuovo luogo";
+  document.getElementById("coordinate-pannello").textContent =
+    `${lat.toFixed(4)}, ${lng.toFixed(4)} — recupero città e paese…`;
+  document.getElementById("stato-visitato").checked = true;
+  document.getElementById("campo-citta").value = "";
+  document.getElementById("campo-paese").value = "";
+  document.getElementById("campo-data").value = "";
+  document.getElementById("campo-note").value = "";
+  document.getElementById("campo-link").value = "";
+  mostraPannello(true);
+
+  // Precompila città e paese con il reverse geocoding
+  const info = await geocodificaInversa(lat, lng);
+  // L'utente potrebbe aver già chiuso il pannello: in tal caso, stop
+  if (!bozza || bozza.idInModifica !== null) return;
+  bozza.codicePaese = info.codicePaese;
+  if (info.citta && !document.getElementById("campo-citta").value) {
+    document.getElementById("campo-citta").value = info.citta;
+  }
+  if (info.paese && !document.getElementById("campo-paese").value) {
+    document.getElementById("campo-paese").value = info.paese;
+  }
+  document.getElementById("coordinate-pannello").textContent =
+    `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
+// Apre il pannello per MODIFICARE un luogo esistente
+function apriPannelloModifica(id) {
+  const luogo = luoghi.find(l => l.id === id);
+  if (!luogo) return;
+
+  bozza = { lat: luogo.lat, lng: luogo.lng, codicePaese: luogo.codicePaese, idInModifica: id };
+
+  document.getElementById("titolo-pannello").textContent = "Modifica luogo";
+  document.getElementById("coordinate-pannello").textContent =
+    `${luogo.lat.toFixed(4)}, ${luogo.lng.toFixed(4)}`;
+  document.getElementById(luogo.stato === "visitato" ? "stato-visitato" : "stato-desiderio").checked = true;
+  document.getElementById("campo-citta").value = luogo.citta || "";
+  document.getElementById("campo-paese").value = luogo.paese || "";
+  document.getElementById("campo-data").value = luogo.data || "";
+  document.getElementById("campo-note").value = luogo.note || "";
+  document.getElementById("campo-link").value = luogo.link || "";
+
+  mappa.closePopup();
+  mostraPannello(true);
+}
+
+function chiudiPannello() {
+  mostraPannello(false);
+  rimuoviMarkerProvvisorio();
+  bozza = null;
+}
+
+// Salva il luogo (nuovo o modificato)
+async function salvaLuogo() {
+  if (!bozza) return;
+
+  const stato = document.getElementById("stato-visitato").checked ? "visitato" : "desiderio";
+  const dati = {
+    citta: document.getElementById("campo-citta").value.trim(),
+    paese: document.getElementById("campo-paese").value.trim(),
+    data:  document.getElementById("campo-data").value,
+    note:  document.getElementById("campo-note").value.trim(),
+    link:  document.getElementById("campo-link").value.trim(),
+    stato
+  };
+
+  if (bozza.idInModifica) {
+    // Aggiorna il luogo esistente
+    const luogo = luoghi.find(l => l.id === bozza.idInModifica);
+    if (!luogo) return;
+    Object.assign(luogo, dati);
+    // Il marker cambia colore se è cambiata la categoria
+    const marker = markerPerId.get(luogo.id);
+    if (marker) marker.setStyle({ fillColor: coloreStato(luogo.stato) });
+  } else {
+    // Nuovo luogo
+    const luogo = {
+      id: nuovoId(),
+      lat: bozza.lat,
+      lng: bozza.lng,
+      codicePaese: bozza.codicePaese,
+      ...dati
+    };
+    luoghi.push(luogo);
+    const marker = creaMarker(luogo);
+    marker.addTo(gruppoMarker);
+    markerPerId.set(luogo.id, marker);
+  }
+
+  const ok = await Archivio.salva(luoghi);
+  aggiornaColoriPaesi();
+  aggiornaContatori();
+  chiudiPannello();
+  toast(ok ? "Luogo salvato" : "Salvato in memoria, ma la scrittura su disco è fallita");
+}
+
+// Elimina un luogo dopo conferma
+async function eliminaLuogo(id) {
+  const luogo = luoghi.find(l => l.id === id);
+  if (!luogo) return;
+  const nome = luogo.citta || "questo luogo";
+  if (!confirm(`Eliminare "${nome}"?`)) return;
+
+  luoghi = luoghi.filter(l => l.id !== id);
+  const marker = markerPerId.get(id);
+  if (marker) gruppoMarker.removeLayer(marker);
+  markerPerId.delete(id);
+
+  await Archivio.salva(luoghi);
+  aggiornaColoriPaesi();
+  aggiornaContatori();
+  mappa.closePopup();
+  toast("Luogo eliminato");
+}
+
+/* ============================================================
+   RICERCA PER NOME
+   ============================================================ */
+
+function nascondiRisultati() {
+  const box = document.getElementById("risultati-ricerca");
+  box.style.display = "none";
+  box.innerHTML = "";
+}
+
+async function eseguiRicerca() {
+  const testo = document.getElementById("campo-ricerca").value.trim();
+  if (!testo) return;
+
+  const box = document.getElementById("risultati-ricerca");
+  box.innerHTML = "";
+  try {
+    const risultati = await cercaLocalita(testo);
+    if (!risultati.length) {
+      toast("Nessun risultato per la ricerca");
+      return;
+    }
+    for (const r of risultati) {
+      const btn = document.createElement("button");
+      btn.textContent = r.display_name;
+      btn.addEventListener("click", () => {
+        nascondiRisultati();
+        document.getElementById("campo-ricerca").value = "";
+        const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+        mappa.flyTo([lat, lng], 9, { duration: 1.2 });
+        // A fine volo, propone subito l'inserimento in quel punto
+        mappa.once("moveend", () => apriPannelloNuovo(lat, lng));
+      });
+      box.appendChild(btn);
+    }
+    box.style.display = "block";
+  } catch (e) {
+    toast("Ricerca non riuscita: controlla la connessione");
+  }
+}
+
+/* ============================================================
+   BACKUP: ESPORTA E IMPORTA JSON
+   ============================================================ */
+
+function esportaBackup() {
+  const contenuto = {
+    app: "atlante-viaggi",
+    versione: 1,
+    esportato: new Date().toISOString(),
+    luoghi
+  };
+  const blob = new Blob([JSON.stringify(contenuto, null, 2)],
+                        { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const oggi = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `atlante-viaggi-${oggi}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast("Backup esportato");
+}
+
+function importaBackup(file) {
+  const lettore = new FileReader();
+  lettore.onload = async () => {
+    try {
+      const dati = JSON.parse(lettore.result);
+      // Accetta sia il formato completo sia un semplice array di luoghi
+      const elenco = Array.isArray(dati) ? dati : dati.luoghi;
+      if (!Array.isArray(elenco)) throw new Error("formato non riconosciuto");
+
+      // Controllo minimo su ogni voce
+      const validi = elenco.filter(l =>
+        l && typeof l.lat === "number" && typeof l.lng === "number");
+      if (!validi.length) throw new Error("nessun luogo valido nel file");
+
+      const msg = `Importare ${validi.length} luoghi?\n` +
+                  `ATTENZIONE: i ${luoghi.length} luoghi attuali verranno sostituiti.`;
+      if (!confirm(msg)) return;
+
+      // Garantisce che ogni luogo abbia un id
+      for (const l of validi) if (!l.id) l.id = nuovoId();
+
+      luoghi = validi;
+      await Archivio.salva(luoghi);
+      ridisegnaMarker();
+      aggiornaColoriPaesi();
+      aggiornaContatori();
+      toast(`Importati ${validi.length} luoghi`);
+    } catch (e) {
+      toast("File non valido: " + e.message);
+    }
+  };
+  lettore.readAsText(file);
+}
+
+/* ============================================================
+   AVVIO
+   ============================================================ */
+
+async function avvia() {
+  // Mappa centrata sul mondo, con limiti per non "perderla" trascinando
+  mappa = L.map("mappa", {
+    center: [30, 10],
+    zoom: 2,
+    minZoom: 2,
+    worldCopyJump: true,
+    zoomControl: false
+  });
+  L.control.zoom({ position: "bottomright" }).addTo(mappa);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(mappa);
+
+  gruppoMarker = L.layerGroup().addTo(mappa);
+
+  // Tap/click sulla mappa = proposta di nuovo luogo
+  mappa.on("click", e => {
+    // Se il pannello è già aperto non si apre un secondo inserimento
+    if (document.getElementById("pannello").style.display === "block") return;
+    nascondiRisultati();
+    apriPannelloNuovo(e.latlng.lat, e.latlng.lng);
+  });
+
+  // Pannello
+  document.getElementById("bottone-salva").addEventListener("click", salvaLuogo);
+  document.getElementById("bottone-annulla").addEventListener("click", chiudiPannello);
+  document.getElementById("velo").addEventListener("click", chiudiPannello);
+
+  // Ricerca
+  document.getElementById("bottone-ricerca").addEventListener("click", eseguiRicerca);
+  document.getElementById("campo-ricerca").addEventListener("keydown", e => {
+    if (e.key === "Enter") eseguiRicerca();
+  });
+
+  // Backup
+  document.getElementById("bottone-esporta").addEventListener("click", esportaBackup);
+  document.getElementById("bottone-importa").addEventListener("click",
+    () => document.getElementById("file-import").click());
+  document.getElementById("file-import").addEventListener("change", e => {
+    if (e.target.files.length) importaBackup(e.target.files[0]);
+    e.target.value = ""; // permette di reimportare lo stesso file
+  });
+
+  // Dati salvati e confini
+  luoghi = await Archivio.carica();
+  ridisegnaMarker();
+  aggiornaContatori();
+  caricaConfini(); // asincrono, senza bloccare l'avvio
+}
+
+avvia();
+</script>
+</body>
+</html>
