@@ -17,17 +17,71 @@
 <link rel="apple-touch-icon" href="./icona-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icona-192.png">
 
+<!-- ==========================================================
+     FONT LOCALI
+     ------------------------------------------------------------
+     Stanno nel repository, non su un CDN: così l'app ha la sua
+     faccia anche al primo avvio offline. Il precaricamento evita
+     che il testo compaia prima nel carattere di sistema e poi
+     salti a quello giusto. L'attributo crossorigin serve anche
+     per i file dello stesso dominio: i font si scaricano sempre
+     in modalità anonima.
+     ========================================================== -->
+<link rel="preload" href="./fredoka-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./nunito-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./nunito-sans-600.woff2" as="font" type="font/woff2" crossorigin>
+
 <!-- Leaflet: libreria per la mappa interattiva -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <style>
   /* ==========================================================
+     DICHIARAZIONE DEI FONT
+     ------------------------------------------------------------
+     Fredoka porta l'identità: sta solo nel banner del nome, un
+     peso soltanto. Nunito Sans fa il lavoro dell'interfaccia in
+     due pesi, perché è leggibile a corpo piccolo — nelle liste,
+     nelle date, nei numerini sui segnaposti.
+
+     'swap' significa: mostra subito il testo con il carattere di
+     sistema e sostituiscilo appena il font è pronto. Meglio un
+     testo leggibile con il carattere sbagliato che nessun testo.
+
+     I glifi ✓ ★ ◎ non stanno nei sottoinsiemi latini: li disegna
+     il carattere di sistema, come prima. È voluto.
+     ========================================================== */
+  @font-face {
+    font-family: "Fredoka";
+    src: url("./fredoka-500.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Nunito Sans";
+    src: url("./nunito-sans-400.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Nunito Sans";
+    src: url("./nunito-sans-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* ==========================================================
      PALETTE E VARIABILI
      verde  = posti visitati / paesi colorati
      ambra  = desideri, e anello del doppio stato
      ========================================================== */
   :root {
+    --font-titolo: "Fredoka", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-interfaccia: "Nunito Sans", -apple-system, "Segoe UI", Roboto,
+                        "Helvetica Neue", sans-serif;
     --verde: #2e7d46;
     --verde-scuro: #1f5731;
     --ambra: #d97b1f;
@@ -46,9 +100,12 @@
   html, body {
     margin: 0;
     height: 100%;
-    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-family: var(--font-interfaccia);
     color: var(--inchiostro);
   }
+
+  /* Bottoni e campi non ereditano il carattere: va detto una volta */
+  button, input, select, textarea { font-family: inherit; }
 
   #mappa { position: fixed; inset: 0; z-index: 1; }
   #mappa.in-inserimento { cursor: crosshair; }
@@ -87,7 +144,7 @@
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     color: #fff;
     border: 2px solid #fff;
@@ -123,7 +180,7 @@
     border: 1.5px solid #fff;
     border-radius: 999px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
   }
 
@@ -169,7 +226,15 @@
     width: 100%;
     max-width: 380px;
   }
-  #riquadro-accesso h1 { margin: 0 0 4px; font-size: 20px; }
+  /* Stesso carattere del banner: il nome dell'app si presenta
+     sempre allo stesso modo, dall'accesso in poi */
+  #riquadro-accesso h1 {
+    margin: 0 0 4px;
+    font-family: var(--font-titolo);
+    font-weight: 500;
+    font-size: 23px;
+    color: var(--verde-scuro);
+  }
   #riquadro-accesso p.sottotitolo {
     margin: 0 0 20px;
     font-size: 13px;
@@ -183,7 +248,7 @@
     color: #fff;
     padding: 14px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     margin-top: 4px;
   }
@@ -215,20 +280,26 @@
   }
   #barra-alta > * { pointer-events: auto; }
 
-  /* Titolo dell'app: identità, non istruzioni. Si ritira quando
-     compaiono il promemoria o l'etichetta del punto cercato. */
+  /* Banner del nome: sempre visibile, occupa tutta la barra e sta
+     al centro. Non si ritira più davanti a promemoria ed etichette:
+     quelle scendono sulla riga sotto. La regola vecchia — identità
+     e istruzioni mai sulla stessa riga — vale ancora, ma ora si
+     rispetta separando le righe invece di nascondere il nome.
+     Costo accettato: una quarantina di pixel di mappa in meno. */
   #titolo-app {
-    align-self: flex-start;
-    background: var(--carta);
-    border-radius: 999px;
+    align-self: stretch;
+    text-align: center;
+    background: var(--verde-scuro);
+    color: #fff;
+    border-radius: var(--raggio);
     box-shadow: var(--ombra);
-    padding: 5px 14px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--verde-scuro);
+    padding: 9px 14px;
+    font-family: var(--font-titolo);
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.15;
     letter-spacing: .01em;
   }
-  #titolo-app.nascosto { display: none; }
 
   #riga-ricerca { display: flex; gap: 8px; align-items: center; }
 
@@ -439,7 +510,7 @@
     margin-bottom: 6px;
     border-bottom: 1px solid var(--bordo);
   }
-  #nome-utente { font-weight: 700; font-size: 16px; }
+  #nome-utente { font-weight: 600; font-size: 16px; }
   #stato-sincronia {
     font-size: 12px;
     color: var(--grigio);
@@ -486,7 +557,7 @@
     border-radius: 10px;
     padding: 12px;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
   }
   .avvertenza {
@@ -515,7 +586,7 @@
     padding: 12px;
     width: 100%;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
   }
 
@@ -588,7 +659,7 @@
     border-radius: var(--raggio);
     padding: 13px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
   }
   .principale { background: var(--inchiostro); color: #fff; }
@@ -630,7 +701,7 @@
     background: none;
     color: var(--verde-scuro);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     padding: 4px;
     font-family: inherit;
@@ -773,7 +844,7 @@
     border-radius: 999px;
     padding: 8px 16px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     flex-shrink: 0;
   }
@@ -882,7 +953,7 @@
     <input type="file" id="file-import" accept=".json,application/json" hidden>
   </div>
 
-  <div id="versione-app">Gli animali viaggiatori 3.2.1</div>
+  <div id="versione-app">Gli animali viaggiatori 3.3.0</div>
 
   <div class="azioni">
     <button class="secondaria" id="chiudi-impostazioni">Chiudi</button>
@@ -1795,18 +1866,6 @@ function aggiornaConteggiMenu() {
 }
 
 /* ============================================================
-   TITOLO DELL'APP
-   ------------------------------------------------------------
-   Identità, non istruzioni: si ritira quando la barra deve
-   dire all'utente cosa fare.
-   ============================================================ */
-
-function aggiornaTitoloApp() {
-  el("titolo-app").classList.toggle("nascosto",
-    modalitaInserimento || !!puntoCercato);
-}
-
-/* ============================================================
    EVIDENZA DEL VIAGGIO
    ============================================================ */
 
@@ -1862,14 +1921,12 @@ function accendiPuntoCercato(punto) {
   }).addTo(mappa);
 
   aggiornaEtichettaAggiungi();
-  aggiornaTitoloApp();
 }
 
 function spegniPuntoCercato() {
   puntoCercato = null;
   rimuoviMarkerCercato();
   el("etichetta-aggiungi").classList.remove("visibile");
-  aggiornaTitoloApp();
 }
 
 function rimuoviMarkerCercato() {
@@ -1937,7 +1994,6 @@ function impostaModalitaInserimento(attiva, viaggioId = null) {
   el("mappa").classList.toggle("in-inserimento", modalitaInserimento);
 
   aggiornaEtichettaAggiungi();
-  aggiornaTitoloApp();
 }
 
 /* ============================================================

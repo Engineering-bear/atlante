@@ -10,7 +10,7 @@
    le copie vecchie e riscaricare tutto.
    ============================================================ */
 
-const VERSIONE = "3.2.1";
+const VERSIONE = "3.3.0";
 
 // Tre magazzini separati, così si svuotano in modo indipendente
 const CACHE_APP = `atlante-app-${VERSIONE}`;   // i file dell'app: si rinnova a ogni versione
@@ -22,7 +22,11 @@ const CACHE_TILE = "atlante-tile";             // i quadrotti della mappa
 // quanto basta per rivedere offline le zone già guardate.
 const MAX_TILE = 400;
 
-// File dell'app da salvare subito, all'installazione
+/* File dell'app da salvare subito, all'installazione.
+   ATTENZIONE: se anche uno solo manca o è scritto male,
+   l'installazione fallisce in silenzio e i telefoni restano
+   sulla versione precedente, senza alcun errore visibile.
+   Dalla 3.3.0 la lista comprende i tre font locali. */
 const FILE_APP = [
   "./",
   "./index.html",
@@ -30,7 +34,10 @@ const FILE_APP = [
   "./icona-192.png",
   "./icona-512.png",
   "./icona-180.png",
-  "./icona-maskable-512.png"
+  "./icona-maskable-512.png",
+  "./fredoka-500.woff2",
+  "./nunito-sans-400.woff2",
+  "./nunito-sans-600.woff2"
 ];
 
 /* ============================================================
