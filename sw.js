@@ -10,7 +10,7 @@
    le copie vecchie e riscaricare tutto.
    ============================================================ */
 
-const VERSIONE = "3.0.0";
+const VERSIONE = "3.2.0";
 
 // Tre magazzini separati, così si svuotano in modo indipendente
 const CACHE_APP = `atlante-app-${VERSIONE}`;   // i file dell'app: si rinnova a ogni versione
