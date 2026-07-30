@@ -1,5 +1,5 @@
 /* ============================================================
-   SERVICE WORKER DELL'ATLANTE
+   SERVICE WORKER DI "GLI ANIMALI VIAGGIATORI"
    ------------------------------------------------------------
    È il programma che sta fra l'app e la rete. Decide, per ogni
    richiesta, se rispondere con una copia salvata o andare online.
@@ -10,7 +10,7 @@
    le copie vecchie e riscaricare tutto.
    ============================================================ */
 
-const VERSIONE = "3.2.0";
+const VERSIONE = "3.2.1";
 
 // Tre magazzini separati, così si svuotano in modo indipendente
 const CACHE_APP = `atlante-app-${VERSIONE}`;   // i file dell'app: si rinnova a ogni versione

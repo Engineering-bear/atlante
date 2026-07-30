@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Il nostro atlante — mappa dei viaggi</title>
+<title>Gli animali viaggiatori — mappa dei viaggi</title>
 
 <!-- ==========================================================
      INSTALLAZIONE SUL TELEFONO (PWA)
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Atlante">
+<meta name="apple-mobile-web-app-title" content="I nostri viaggi">
 <link rel="apple-touch-icon" href="./icona-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icona-192.png">
 
@@ -98,7 +98,6 @@
   .segnaposto.desiderio   { background: var(--ambra); }
   .segnaposto.sconosciuto { background: #8a938e; }   /* posto senza visite: non deve esistere */
 
-  /* Le combinazioni di anelli */
   .segnaposto.doppio {
     box-shadow: 0 0 0 3px var(--ambra), 0 1px 5px rgba(20, 35, 25, .4);
   }
@@ -128,10 +127,11 @@
     line-height: 1;
   }
 
-  /* Segnaposto provvisorio, durante l'inserimento */
+  /* Segnaposti provvisori: inserimento in corso, e punto cercato */
   .segnaposto.provvisorio { background: #8a938e; font-size: 15px; }
+  .segnaposto.cercato { background: var(--inchiostro); font-size: 13px; }
 
-  /* Versione ridotta per la legenda */
+  /* Versione ridotta per legenda ed elenco dei luoghi */
   .campione {
     position: relative;
     display: inline-block;
@@ -141,9 +141,10 @@
     box-shadow: 0 0 0 1px rgba(20, 35, 25, .15);
     flex-shrink: 0;
   }
-  .campione.visitato  { background: var(--verde); }
-  .campione.desiderio { background: var(--ambra); }
-  .campione.doppio    { box-shadow: 0 0 0 2.5px var(--ambra); margin-right: 2px; }
+  .campione.visitato    { background: var(--verde); }
+  .campione.desiderio   { background: var(--ambra); }
+  .campione.sconosciuto { background: #8a938e; }
+  .campione.doppio      { box-shadow: 0 0 0 2.5px var(--ambra); margin-right: 2px; }
 
   /* ==========================================================
      SCHERMATA DI ACCESSO
@@ -213,6 +214,21 @@
     pointer-events: none;
   }
   #barra-alta > * { pointer-events: auto; }
+
+  /* Titolo dell'app: identità, non istruzioni. Si ritira quando
+     compaiono il promemoria o l'etichetta del punto cercato. */
+  #titolo-app {
+    align-self: flex-start;
+    background: var(--carta);
+    border-radius: 999px;
+    box-shadow: var(--ombra);
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--verde-scuro);
+    letter-spacing: .01em;
+  }
+  #titolo-app.nascosto { display: none; }
 
   #riga-ricerca { display: flex; gap: 8px; align-items: center; }
 
@@ -290,8 +306,8 @@
   }
   #contatori strong { color: var(--verde-scuro); }
 
-  /* Etichetta del viaggio evidenziato */
-  #etichetta-viaggio {
+  /* Etichette scure: viaggio evidenziato e punto cercato */
+  .etichetta-scura {
     display: none;
     align-self: flex-start;
     align-items: center;
@@ -300,9 +316,10 @@
     border-radius: 999px;
     box-shadow: var(--ombra);
     padding: 4px 6px;
+    max-width: 100%;
   }
-  #etichetta-viaggio.visibile { display: flex; }
-  #titolo-viaggio-selezionato {
+  .etichetta-scura.visibile { display: flex; }
+  .etichetta-scura > button.testo {
     border: none;
     background: none;
     color: #fff;
@@ -315,7 +332,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  #spegni-viaggio {
+  .etichetta-scura > button.spegni {
     border: none;
     background: rgba(255,255,255,.16);
     color: #fff;
@@ -325,6 +342,7 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+  #etichetta-aggiungi > button.testo { color: #b7e3c4; }
 
   #promemoria-inserimento {
     display: none;
@@ -459,10 +477,7 @@
   }
   #voce-esci { color: #b3392c; font-weight: 600; border-bottom: none; }
 
-  /* Manutenzione: chiusa per difetto, contiene l'operazione distruttiva */
-  #manutenzione { border-bottom: 1px solid var(--bordo); }
-  #corpo-manutenzione { display: none; padding-bottom: 6px; }
-  #corpo-manutenzione.aperto { display: block; }
+  /* ---- Impostazioni ---- */
   #bottone-importa {
     width: 100%;
     border: 1.5px solid #f0c8c1;
@@ -480,11 +495,28 @@
     margin: 0 0 10px;
     line-height: 1.5;
   }
+  .blocco-impostazione {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--bordo);
+  }
+  .blocco-impostazione:last-of-type { border-bottom: none; }
+  .titolo-impostazione { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
   #versione-app {
-    margin-top: 12px;
+    margin-top: 14px;
     font-size: 11px;
     color: var(--grigio);
     text-align: center;
+  }
+  #bottone-esporta {
+    border: 1.5px solid var(--bordo);
+    background: var(--carta);
+    color: var(--inchiostro);
+    border-radius: 10px;
+    padding: 12px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   /* ---- Campi ---- */
@@ -536,7 +568,7 @@
   .campo input:focus, .campo textarea:focus, .campo select:focus { border-color: var(--verde); }
   .campo textarea { resize: vertical; min-height: 70px; }
   .due-campi { display: flex; gap: 8px; }
-  .due-campi .campo { flex: 1; }
+  .due-campi .campo { flex: 1; min-width: 0; }
   .nascosto { display: none !important; }
 
   .firma-riga { font-size: 12px; color: var(--grigio); margin-top: 4px; }
@@ -562,6 +594,48 @@
   .principale { background: var(--inchiostro); color: #fff; }
   .secondaria { background: #eef0ef; color: var(--inchiostro); }
   .distruttiva { background: #fbe9e7; color: #b3392c; }
+
+  /* ---- Filtri dell'elenco dei luoghi ---- */
+  .segmenti { display: flex; gap: 6px; margin-bottom: 10px; }
+  .segmento {
+    flex: 1;
+    border: 1.5px solid var(--bordo);
+    background: var(--carta);
+    border-radius: 10px;
+    padding: 9px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grigio);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .segmento.attivo {
+    border-color: var(--verde);
+    background: #eef7f0;
+    color: var(--verde-scuro);
+  }
+  #riga-conteggio {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--grigio);
+    padding: 4px 0 2px;
+    border-top: 1px solid var(--bordo);
+    margin-top: 10px;
+  }
+  #azzera-filtri {
+    border: none;
+    background: none;
+    color: var(--verde-scuro);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px;
+    font-family: inherit;
+  }
+  #azzera-filtri.nascosto { display: none; }
 
   /* ---- Elenchi dentro i fogli ---- */
   .elenco { margin: 6px 0 0; }
@@ -603,10 +677,31 @@
   }
   .senza-viaggio { color: var(--grigio); font-weight: 400; }
 
+  /* La freccia significa "si apre una scheda". Solo dove è vero. */
+  .apribile {
+    position: relative;
+    padding-right: 22px !important;
+    background: #f7f9f8;
+    border-radius: 8px;
+  }
+  .apribile::after {
+    content: "›";
+    position: absolute;
+    right: 7px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--grigio);
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  /* Riga con il campione colorato, nell'elenco dei luoghi */
+  .con-campione { display: flex; align-items: center; gap: 9px; }
+  .con-campione .testo-riga { min-width: 0; flex: 1; }
+
   /* ==========================================================
      POPUP DEL POSTO
      ========================================================== */
-  .popup-posto { font-size: 14px; min-width: 210px; }
+  .popup-posto { font-size: 14px; min-width: 240px; }
   .popup-posto h3 { margin: 0 0 2px; font-size: 16px; }
   .popup-posto .sotto { color: var(--grigio); font-size: 12px; margin-bottom: 4px; }
   .popup-posto .elenco { max-height: 150px; overflow-y: auto; }
@@ -617,9 +712,9 @@
     padding-top: 6px;
     border-top: 1px solid var(--bordo);
   }
-  .popup-azioni { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .popup-azioni { display: flex; gap: 6px; margin-top: 10px; }
   .popup-azioni button {
-    flex: 1 1 45%;
+    flex: 1;
     border: none;
     border-radius: 8px;
     padding: 9px 6px;
@@ -629,7 +724,6 @@
   }
   .popup-azioni .aggiungi { background: #eef7f0; color: var(--verde-scuro); }
   .popup-azioni .modifica { background: #eef0ef; }
-  .popup-azioni .elimina  { background: #fbe9e7; color: #b3392c; flex-basis: 100%; }
 
   /* ==========================================================
      TOAST
@@ -698,6 +792,8 @@
 
 <!-- Barra superiore -->
 <div id="barra-alta">
+  <div id="titolo-app">Gli animali viaggiatori</div>
+
   <div id="riga-ricerca">
     <div id="casella-ricerca">
       <input id="campo-ricerca" type="text" placeholder="Cerca una località…"
@@ -706,12 +802,20 @@
     </div>
     <button id="bottone-menu" aria-label="Apri il menù">☰</button>
   </div>
+
   <div id="risultati-ricerca"></div>
   <div class="chip" id="contatori">Carico l'atlante…</div>
-  <div id="etichetta-viaggio">
-    <button id="titolo-viaggio-selezionato"></button>
-    <button id="spegni-viaggio" aria-label="Spegni l'evidenza del viaggio">×</button>
+
+  <div class="etichetta-scura" id="etichetta-viaggio">
+    <button class="testo" id="titolo-viaggio-selezionato"></button>
+    <button class="spegni" id="spegni-viaggio" aria-label="Spegni l'evidenza del viaggio">×</button>
   </div>
+
+  <div class="etichetta-scura" id="etichetta-aggiungi">
+    <button class="testo" id="testo-aggiungi"></button>
+    <button class="spegni" id="spegni-aggiungi" aria-label="Annulla il punto cercato">×</button>
+  </div>
+
   <div id="promemoria-inserimento"></div>
 </div>
 
@@ -739,34 +843,84 @@
     </div>
   </div>
 
+  <button class="voce-menu" id="voce-luoghi">
+    Luoghi
+    <span class="spiega" id="conteggio-luoghi">Nessun luogo</span>
+  </button>
+
   <button class="voce-menu" id="voce-viaggi">
     Viaggi
     <span class="spiega" id="conteggio-viaggi">Nessun viaggio</span>
   </button>
 
-  <button class="voce-menu" id="bottone-esporta">
-    Esporta backup
-    <span class="spiega">Salva un file JSON con posti, viaggi e visite.</span>
+  <button class="voce-menu" id="voce-impostazioni">
+    Impostazioni
+    <span class="spiega">Backup e informazioni sull'app.</span>
   </button>
 
-  <div id="manutenzione">
-    <button class="voce-menu" id="apri-manutenzione" style="border-bottom:none">
-      Manutenzione
-      <span class="spiega">Operazioni rare. Da qui si può cancellare tutto.</span>
-    </button>
-    <div id="corpo-manutenzione">
-      <p class="avvertenza">
-        L'importazione <strong>sostituisce l'intero archivio condiviso</strong>:
-        cancella posti, viaggi e visite di entrambi, e scrive quelli del file.
-        Non si può annullare.
-      </p>
-      <button id="bottone-importa">Importa backup (cancella tutto)</button>
-      <input type="file" id="file-import" accept=".json,application/json" hidden>
+  <button class="voce-menu" id="voce-esci">Esci dall'account</button>
+</div>
+
+<!-- ======================= IMPOSTAZIONI ======================= -->
+<div class="foglio" id="impostazioni">
+  <h2>Impostazioni</h2>
+  <div class="sottotesto">Operazioni rare e informazioni sull'app.</div>
+
+  <div class="blocco-impostazione">
+    <div class="titolo-impostazione">Esporta backup</div>
+    <p class="avvertenza">Salva un file JSON con posti, viaggi e visite.</p>
+    <button id="bottone-esporta">Esporta backup</button>
+  </div>
+
+  <div class="blocco-impostazione">
+    <div class="titolo-impostazione">Importa backup</div>
+    <p class="avvertenza">
+      <strong>Sostituisce l'intero archivio condiviso</strong>: cancella posti,
+      viaggi e visite di entrambi, e scrive quelli del file. Non si può annullare.
+    </p>
+    <button id="bottone-importa">Importa backup (cancella tutto)</button>
+    <input type="file" id="file-import" accept=".json,application/json" hidden>
+  </div>
+
+  <div id="versione-app">Gli animali viaggiatori 3.2.1</div>
+
+  <div class="azioni">
+    <button class="secondaria" id="chiudi-impostazioni">Chiudi</button>
+  </div>
+</div>
+
+<!-- ====================== ELENCO DEI LUOGHI ====================== -->
+<div class="foglio" id="elenco-luoghi">
+  <h2>Luoghi</h2>
+  <div class="sottotesto">Tocca un luogo per andarci sulla mappa.</div>
+
+  <div id="filtri-luoghi">
+    <div class="segmenti" id="filtro-stato">
+      <button class="segmento attivo" data-stato="">Tutti</button>
+      <button class="segmento" data-stato="visitato">Visitati</button>
+      <button class="segmento" data-stato="desiderio">Da visitare</button>
+    </div>
+    <div class="due-campi">
+      <div class="campo">
+        <label for="filtro-paese">Paese</label>
+        <select id="filtro-paese"></select>
+      </div>
+      <div class="campo">
+        <label for="filtro-anno">Anno</label>
+        <select id="filtro-anno"></select>
+      </div>
+    </div>
+    <div id="riga-conteggio">
+      <span id="testo-conteggio"></span>
+      <button id="azzera-filtri" class="nascosto">Azzera filtri</button>
     </div>
   </div>
 
-  <button class="voce-menu" id="voce-esci">Esci dall'account</button>
-  <div id="versione-app">Atlante 3.2.0</div>
+  <div class="elenco" id="righe-luoghi"></div>
+
+  <div class="azioni">
+    <button class="secondaria" id="chiudi-elenco-luoghi">Chiudi</button>
+  </div>
 </div>
 
 <!-- ====================== ELENCO DEI VIAGGI ====================== -->
@@ -888,12 +1042,15 @@
     <button class="secondaria" id="togli-dal-viaggio">Togli dal viaggio</button>
     <button class="distruttiva" id="elimina-visita">Elimina visita</button>
   </div>
+  <div class="azioni" id="azioni-posto-esistente">
+    <button class="distruttiva" id="elimina-posto">Elimina il posto e tutte le sue visite</button>
+  </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
 <div id="avviso-aggiornamento">
-  <span style="flex:1">C'è una versione aggiornata dell'atlante.</span>
+  <span style="flex:1">C'è una versione aggiornata dell'app.</span>
   <button id="bottone-rimanda">Dopo</button>
   <button id="bottone-ricarica">Ricarica</button>
 </div>
@@ -901,7 +1058,7 @@
 <!-- Schermata di accesso -->
 <div id="accesso">
   <div id="riquadro-accesso">
-    <h1>Il nostro atlante</h1>
+    <h1>Gli animali viaggiatori</h1>
     <p class="sottotitolo">Entra per vedere e aggiornare la mappa.</p>
     <div class="campo">
       <label for="campo-email">Email</label>
@@ -1006,9 +1163,18 @@ const VERSIONE_BACKUP = 4;
 // (il limite vero di Firestore è 500: si tiene un margine)
 const MAX_OPERAZIONI = 480;
 
-// Distanza in pixel sotto la quale un tocco è considerato
+// Distanza in pixel sotto la quale un punto è considerato
 // "sopra un posto che c'è già"
 const RAGGIO_VICINANZA = 24;
+
+/* Scala di colore dei paesi: più posti visitati, più scuro.
+   Il tetto è 0.52 perché oltre quella soglia strade e nomi
+   della mappa sottostante smettono di leggersi. */
+const GRADINI_PAESE = [
+  { da: 10, opacita: 0.52, spessore: 1.6 },
+  { da: 3,  opacita: 0.36, spessore: 1.2 },
+  { da: 1,  opacita: 0.22, spessore: 1.0 }
+];
 
 /* ============================================================
    STATO DELL'APPLICAZIONE
@@ -1030,7 +1196,8 @@ let fermaAscolti = [];
 /* Bozza in corso nel pannello.
    tipo: "nuovo" | "nuovaVisita" | "modificaVisita" | "modificaPosto" */
 let bozza = null;
-let markerProvvisorio = null;
+let markerProvvisorio = null;   // durante l'inserimento dal pannello
+let markerCercato = null;       // punto trovato con la ricerca
 
 // Interfaccia
 let modalitaInserimento = false;
@@ -1038,6 +1205,14 @@ let viaggioPerInserimento = null;   // se impostato, le nuove tappe entrano qui
 let viaggioSelezionato = null;      // viaggio evidenziato sulla mappa
 let viaggioInScheda = null;         // id del viaggio aperto, null = nuovo
 let foglioAperto = null;
+
+/* Punto individuato dalla ricerca, in attesa di essere aggiunto.
+   { lat, lng, nome, citta, paese, codicePaese } */
+let puntoCercato = null;
+
+// Filtri dell'elenco dei luoghi. Agiscono solo sull'elenco:
+// mappa, contatori e colorazione dei paesi restano intatti.
+let filtri = { stato: "", paese: "", anno: "" };
 
 /* ============================================================
    MAPPA ISO2 -> ISO3
@@ -1088,6 +1263,18 @@ function toast(messaggio) {
   elemento.classList.add("visibile");
   clearTimeout(timerToast);
   timerToast = setTimeout(() => elemento.classList.remove("visibile"), 2600);
+}
+
+// Riempie un contenitore con righe di testo, senza mai usare innerHTML
+// su contenuti scritti dagli utenti
+function scriviRighe(contenitore, righe) {
+  contenitore.innerHTML = "";
+  for (const riga of righe) {
+    if (!riga) continue;
+    const d = document.createElement("div");
+    d.textContent = riga;
+    contenitore.appendChild(d);
+  }
 }
 
 // Data ISO (aaaa-mm-gg) -> formato italiano leggibile
@@ -1144,9 +1331,9 @@ function tappeDelViaggio(viaggioId) {
     .sort((a, b) => (a.data || "9999").localeCompare(b.data || "9999"));
 }
 
-function luogoDi(id)  { return luoghi.find(l => l.id === id) || null; }
+function luogoDi(id)   { return luoghi.find(l => l.id === id) || null; }
 function viaggioDi(id) { return viaggi.find(v => v.id === id) || null; }
-function tappaDi(id)  { return tappe.find(t => t.id === id) || null; }
+function tappaDi(id)   { return tappe.find(t => t.id === id) || null; }
 
 function nomeLuogo(luogo) {
   if (!luogo) return "Luogo sconosciuto";
@@ -1182,19 +1369,23 @@ function nomeAltroUtente() {
    GEOCODING (Nominatim / OpenStreetMap)
    ============================================================ */
 
+// Estrae città, paese e codice paese da una risposta di Nominatim
+function datiIndirizzo(oggetto) {
+  const a = (oggetto && oggetto.address) || {};
+  return {
+    citta: a.city || a.town || a.village || a.municipality || a.county || "",
+    paese: a.country || "",
+    codicePaese: a.country_code || ""
+  };
+}
+
 async function geocodificaInversa(lat, lng) {
   try {
     const url = `${URL_NOMINATIM}/reverse?format=jsonv2&lat=${lat}&lon=${lng}` +
                 `&zoom=10&addressdetails=1&accept-language=it`;
     const risposta = await fetch(url);
     if (!risposta.ok) throw new Error("HTTP " + risposta.status);
-    const dati = await risposta.json();
-    const a = dati.address || {};
-    return {
-      citta: a.city || a.town || a.village || a.municipality || a.county || "",
-      paese: a.country || "",
-      codicePaese: a.country_code || ""
-    };
+    return datiIndirizzo(await risposta.json());
   } catch (e) {
     // Senza rete o servizio non raggiungibile: si compila a mano
     return { citta: "", paese: "", codicePaese: "" };
@@ -1290,11 +1481,11 @@ function creaMarker(luogo) {
     keyboard: false
   });
 
-  marker.bindPopup(() => contenutoPopup(luogo), { maxHeight: 260, minWidth: 210 });
+  marker.bindPopup(() => contenutoPopup(luogo), { maxHeight: 260, minWidth: 240 });
 
   /* Aprendo un posto: se le sue visite appartengono a un solo
      viaggio, quel viaggio si accende sulla mappa. Se sono più di
-     uno non si indovina: si scelgono dal nome nell'elenco. */
+     uno non si indovina: si sceglie dal nome nell'elenco. */
   marker.on("popupopen", () => {
     const suoi = [...new Set(tappeDi(luogo.id).map(t => t.viaggioId).filter(Boolean))];
     evidenziaViaggio(suoi.length === 1 ? suoi[0] : null);
@@ -1333,7 +1524,7 @@ function contenutoPopup(luogo) {
     riga.className = "riga-elenco";
 
     const principale = document.createElement("button");
-    principale.className = "principale-riga";
+    principale.className = "principale-riga apribile";
     const etichetta = [];
     if (t.data) etichetta.push(formattaData(t.data));
     etichetta.push(t.stato === "visitato" ? "✓ visitato" : "★ da visitare");
@@ -1367,27 +1558,22 @@ function contenutoPopup(luogo) {
   }
   box.appendChild(elenco);
 
-  // Azioni
+  /* Due sole azioni. L'eliminazione del posto sta dentro
+     "Modifica": è distruttiva e non deve stare in prima pagina. */
   const azioni = document.createElement("div");
   azioni.className = "popup-azioni";
 
   const btnAggiungi = document.createElement("button");
   btnAggiungi.className = "aggiungi";
-  btnAggiungi.textContent = "+ Visita";
+  btnAggiungi.textContent = "Aggiungi visita";
   btnAggiungi.addEventListener("click", () => apriNuovaVisita(luogo.id));
   azioni.appendChild(btnAggiungi);
 
   const btnModifica = document.createElement("button");
   btnModifica.className = "modifica";
-  btnModifica.textContent = "Modifica posto";
+  btnModifica.textContent = "Modifica";
   btnModifica.addEventListener("click", () => apriModificaPosto(luogo.id));
   azioni.appendChild(btnModifica);
-
-  const btnElimina = document.createElement("button");
-  btnElimina.className = "elimina";
-  btnElimina.textContent = "Elimina il posto e tutte le sue visite";
-  btnElimina.addEventListener("click", () => eliminaPosto(luogo.id));
-  azioni.appendChild(btnElimina);
 
   box.appendChild(azioni);
 
@@ -1462,8 +1648,9 @@ function dopoOgniCambiamento() {
   aggiornaContatori();
   aggiornaLegenda();
   aggiornaEtichettaViaggio();
-  aggiornaConteggioViaggi();
+  aggiornaConteggiMenu();
   if (foglioAperto === "elenco-viaggi") disegnaElencoViaggi();
+  if (foglioAperto === "elenco-luoghi") disegnaElencoLuoghi();
   if (foglioAperto === "scheda-viaggio" && viaggioInScheda) disegnaTappeDelViaggio();
 }
 
@@ -1502,22 +1689,33 @@ function svuotaTutto() {
   gruppoMarker.clearLayers();
   markerPerId.clear();
   viaggioSelezionato = null;
+  filtri = { stato: "", paese: "", anno: "" };
+  spegniPuntoCercato();
   aggiornaColoriPaesi();
 }
 
 /* ============================================================
    COLORAZIONE DEI PAESI VISITATI
+   ------------------------------------------------------------
+   Il verde si scurisce a gradini con il numero di POSTI
+   visitati nel paese, non di visite: cinque ritorni a Roma
+   non fanno conoscere l'Italia più di cinque città diverse.
    ============================================================ */
 
-function paesiVisitatiISO3() {
-  const insieme = new Set();
+function postiPerPaese() {
+  const conteggio = new Map();
   for (const luogo of luoghi) {
     if (!luogo.codicePaese) continue;
     if (aspettoDi(luogo.id).base !== "visitato") continue;
     const iso3 = ISO2_A_ISO3[luogo.codicePaese.toLowerCase()];
-    if (iso3) insieme.add(iso3);
+    if (!iso3) continue;
+    conteggio.set(iso3, (conteggio.get(iso3) || 0) + 1);
   }
-  return insieme;
+  return conteggio;
+}
+
+function gradinoPer(numero) {
+  return GRADINI_PAESE.find(g => numero >= g.da) || GRADINI_PAESE[GRADINI_PAESE.length - 1];
 }
 
 async function caricaConfini() {
@@ -1542,10 +1740,16 @@ async function caricaConfini() {
 
 function aggiornaColoriPaesi() {
   if (!livelloConfini) return;
-  const visitati = paesiVisitatiISO3();
-  livelloConfini.setStyle(feature => visitati.has(feature.id)
-    ? { fillColor: "#2e7d46", fillOpacity: 0.22, color: "#2e7d46", opacity: 0.5, weight: 1 }
-    : { fillOpacity: 0, opacity: 0 });
+  const conteggio = postiPerPaese();
+  livelloConfini.setStyle(feature => {
+    const n = conteggio.get(feature.id) || 0;
+    if (!n) return { fillOpacity: 0, opacity: 0 };
+    const g = gradinoPer(n);
+    return {
+      fillColor: "#2e7d46", fillOpacity: g.opacita,
+      color: "#2e7d46", opacity: 0.55, weight: g.spessore
+    };
+  });
 }
 
 /* ============================================================
@@ -1563,7 +1767,7 @@ function aggiornaContatori() {
   }
 
   // Si contano i POSTI, non le visite: due volte a Roma vale uno
-  const nPaesi = paesiVisitatiISO3().size;
+  const nPaesi = postiPerPaese().size;
   let nVisitati = 0, nDesideri = 0;
   for (const luogo of luoghi) {
     const base = aspettoDi(luogo.id).base;
@@ -1581,10 +1785,25 @@ function aggiornaLegenda() {
     luoghi.some(l => aspettoDi(l.id).doppio));
 }
 
-function aggiornaConteggioViaggi() {
-  const n = viaggi.length;
+function aggiornaConteggiMenu() {
+  const nl = luoghi.length;
+  el("conteggio-luoghi").textContent =
+    nl === 0 ? "Nessun luogo" : (nl === 1 ? "Un luogo" : `${nl} luoghi`);
+  const nv = viaggi.length;
   el("conteggio-viaggi").textContent =
-    n === 0 ? "Nessun viaggio" : (n === 1 ? "Un viaggio" : `${n} viaggi`);
+    nv === 0 ? "Nessun viaggio" : (nv === 1 ? "Un viaggio" : `${nv} viaggi`);
+}
+
+/* ============================================================
+   TITOLO DELL'APP
+   ------------------------------------------------------------
+   Identità, non istruzioni: si ritira quando la barra deve
+   dire all'utente cosa fare.
+   ============================================================ */
+
+function aggiornaTitoloApp() {
+  el("titolo-app").classList.toggle("nascosto",
+    modalitaInserimento || !!puntoCercato);
 }
 
 /* ============================================================
@@ -1619,6 +1838,76 @@ function aggiornaEtichettaViaggio() {
 }
 
 /* ============================================================
+   PUNTO CERCATO: "Aggiungi qui"
+   ------------------------------------------------------------
+   Le coordinate di Nominatim sono più precise di un dito su
+   una mappa al livello di zoom sbagliato. Il segnaposto scuro
+   mostra dove finirà il marker, così non c'è da indovinare.
+   ============================================================ */
+
+function accendiPuntoCercato(punto) {
+  puntoCercato = punto;
+
+  rimuoviMarkerCercato();
+  markerCercato = L.marker([punto.lat, punto.lng], {
+    icon: L.divIcon({
+      className: "",
+      html: '<span class="scatola-segnaposto">' +
+            '<span class="segnaposto cercato">◎</span></span>',
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
+    }),
+    interactive: false,
+    keyboard: false
+  }).addTo(mappa);
+
+  aggiornaEtichettaAggiungi();
+  aggiornaTitoloApp();
+}
+
+function spegniPuntoCercato() {
+  puntoCercato = null;
+  rimuoviMarkerCercato();
+  el("etichetta-aggiungi").classList.remove("visibile");
+  aggiornaTitoloApp();
+}
+
+function rimuoviMarkerCercato() {
+  if (markerCercato) {
+    mappa.removeLayer(markerCercato);
+    markerCercato = null;
+  }
+}
+
+function aggiornaEtichettaAggiungi() {
+  const etichetta = el("etichetta-aggiungi");
+  if (!puntoCercato) { etichetta.classList.remove("visibile"); return; }
+
+  const viaggio = viaggioPerInserimento ? viaggioDi(viaggioPerInserimento) : null;
+  el("testo-aggiungi").textContent = viaggio
+    ? `Aggiungi ${puntoCercato.nome} a "${viaggio.titolo || "Viaggio"}"`
+    : `Aggiungi ${puntoCercato.nome} qui`;
+  etichetta.classList.add("visibile");
+}
+
+function aggiungiDalPuntoCercato() {
+  if (!puntoCercato || !utente) return;
+  const { lat, lng, citta, paese, codicePaese } = puntoCercato;
+
+  // Stessa protezione del tocco sulla mappa: niente doppioni sovrapposti
+  const vicino = postoVicino(L.latLng(lat, lng));
+  if (vicino) {
+    const luogo = luogoDi(vicino);
+    if (confirm(`Qui c'è già "${nomeLuogo(luogo)}".\n\n` +
+                `Aggiungere una visita a quel posto?`)) {
+      apriNuovaVisita(vicino, viaggioPerInserimento);
+      return;
+    }
+  }
+  apriNuovoPosto(lat, lng, { citta, paese, codicePaese });
+}
+
+/* ============================================================
    MODALITÀ INSERIMENTO
    ------------------------------------------------------------
    Il tocco sulla mappa crea qualcosa solo quando è accesa.
@@ -1643,8 +1932,12 @@ function impostaModalitaInserimento(attiva, viaggioId = null) {
       ? `Tocca il punto: la tappa andrà in "${viaggio.titolo || "Viaggio"}"`
       : "Tocca il punto sulla mappa";
   }
-  promemoria.classList.toggle("visibile", modalitaInserimento);
+  // Il promemoria cede il posto all'etichetta del punto cercato
+  promemoria.classList.toggle("visibile", modalitaInserimento && !puntoCercato);
   el("mappa").classList.toggle("in-inserimento", modalitaInserimento);
+
+  aggiornaEtichettaAggiungi();
+  aggiornaTitoloApp();
 }
 
 /* ============================================================
@@ -1665,7 +1958,6 @@ function chiudiFogli() {
   }
   foglioAperto = null;
   el("velo").style.display = "none";
-  el("corpo-manutenzione").classList.remove("aperto");
   rimuoviMarkerProvvisorio();
   bozza = null;
   viaggioInScheda = null;
@@ -1729,10 +2021,11 @@ function preparaSelettoreViaggi(selezionato) {
   el("campo-nuovo-viaggio").classList.add("nascosto");
 }
 
-function mostraGruppi({ posto, visita, azioniVisita }) {
+function mostraGruppi({ posto, visita, azioniVisita, azioniPosto }) {
   el("gruppo-posto").classList.toggle("nascosto", !posto);
   el("gruppo-visita").classList.toggle("nascosto", !visita);
   el("azioni-visita-esistente").classList.toggle("nascosto", !azioniVisita);
+  el("azioni-posto-esistente").classList.toggle("nascosto", !azioniPosto);
 }
 
 function svuotaCampiVisita() {
@@ -1742,21 +2035,31 @@ function svuotaCampiVisita() {
   el("campo-link").value = "";
 }
 
-// NUOVO POSTO con la sua prima visita
-async function apriNuovoPosto(lat, lng) {
-  bozza = { tipo: "nuovo", lat, lng, codicePaese: "", luogoId: null, tappaId: null };
+/* NUOVO POSTO con la sua prima visita.
+   Se arriva dalla ricerca, città e paese sono già noti dal
+   risultato: si evita una seconda chiamata di rete. */
+async function apriNuovoPosto(lat, lng, precompilato = null) {
+  bozza = {
+    tipo: "nuovo", lat, lng,
+    codicePaese: precompilato ? (precompilato.codicePaese || "") : "",
+    luogoId: null, tappaId: null
+  };
 
   mostraMarkerProvvisorio(lat, lng);
   el("titolo-pannello").textContent = "Nuovo luogo";
-  el("coordinate-pannello").textContent =
-    `${lat.toFixed(4)}, ${lng.toFixed(4)} — recupero città e paese…`;
-  el("campo-citta").value = "";
-  el("campo-paese").value = "";
+  el("campo-citta").value = precompilato ? (precompilato.citta || "") : "";
+  el("campo-paese").value = precompilato ? (precompilato.paese || "") : "";
   svuotaCampiVisita();
   preparaSelettoreViaggi(viaggioPerInserimento);
   el("firma-pannello").textContent = "";
-  mostraGruppi({ posto: true, visita: true, azioniVisita: false });
+  mostraGruppi({ posto: true, visita: true, azioniVisita: false, azioniPosto: false });
+
+  const coordinate = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  scriviRighe(el("coordinate-pannello"),
+    [precompilato ? coordinate : `${coordinate} — recupero città e paese…`]);
   apriFoglio("pannello");
+
+  if (precompilato) return;
 
   // Precompila città e paese con la geocodifica inversa
   const info = await geocodificaInversa(lat, lng);
@@ -1764,7 +2067,7 @@ async function apriNuovoPosto(lat, lng) {
   bozza.codicePaese = info.codicePaese;
   if (info.citta && !el("campo-citta").value) el("campo-citta").value = info.citta;
   if (info.paese && !el("campo-paese").value) el("campo-paese").value = info.paese;
-  el("coordinate-pannello").textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  scriviRighe(el("coordinate-pannello"), [coordinate]);
 }
 
 // NUOVA VISITA su un posto che esiste già
@@ -1775,12 +2078,12 @@ function apriNuovaVisita(luogoId, viaggioId = null) {
   bozza = { tipo: "nuovaVisita", luogoId, tappaId: null };
 
   el("titolo-pannello").textContent = "Nuova visita";
-  el("coordinate-pannello").textContent =
-    `${nomeLuogo(luogo)}${luogo.paese ? " · " + luogo.paese : ""}`;
+  scriviRighe(el("coordinate-pannello"),
+    [`${nomeLuogo(luogo)}${luogo.paese ? " · " + luogo.paese : ""}`]);
   svuotaCampiVisita();
   preparaSelettoreViaggi(viaggioId || viaggioPerInserimento);
   el("firma-pannello").textContent = "";
-  mostraGruppi({ posto: false, visita: true, azioniVisita: false });
+  mostraGruppi({ posto: false, visita: true, azioniVisita: false, azioniPosto: false });
   mappa.closePopup();
   apriFoglio("pannello");
 }
@@ -1794,8 +2097,8 @@ function apriVisita(tappaId) {
   bozza = { tipo: "modificaVisita", luogoId: tappa.luogoId, tappaId };
 
   el("titolo-pannello").textContent = "Visita";
-  el("coordinate-pannello").textContent =
-    `${nomeLuogo(luogo)}${luogo && luogo.paese ? " · " + luogo.paese : ""}`;
+  scriviRighe(el("coordinate-pannello"),
+    [`${nomeLuogo(luogo)}${luogo && luogo.paese ? " · " + luogo.paese : ""}`]);
   el(tappa.stato === "visitato" ? "stato-visitato" : "stato-desiderio").checked = true;
   el("campo-data").value = tappa.data || "";
   el("campo-note").value = tappa.note || "";
@@ -1803,25 +2106,29 @@ function apriVisita(tappaId) {
   preparaSelettoreViaggi(tappa.viaggioId);
   el("firma-pannello").textContent = testoFirma(tappa);
   el("togli-dal-viaggio").classList.toggle("nascosto", !tappa.viaggioId);
-  mostraGruppi({ posto: false, visita: true, azioniVisita: true });
+  mostraGruppi({ posto: false, visita: true, azioniVisita: true, azioniPosto: false });
   mappa.closePopup();
   apriFoglio("pannello");
 }
 
-// MODIFICA del posto: solo dove si trova
+/* MODIFICA del posto: dove si trova, e da qui lo si elimina.
+   Il nome in testa serve a non confondere questa scheda con
+   quella di una visita, visto che il titolo dice solo "Modifica". */
 async function apriModificaPosto(luogoId) {
   const luogo = luogoDi(luogoId);
   if (!luogo) return;
 
   bozza = { tipo: "modificaPosto", luogoId, codicePaese: luogo.codicePaese || "" };
 
-  el("titolo-pannello").textContent = "Modifica il posto";
-  el("coordinate-pannello").textContent =
-    `${luogo.lat.toFixed(4)}, ${luogo.lng.toFixed(4)}`;
+  el("titolo-pannello").textContent = "Modifica";
+  scriviRighe(el("coordinate-pannello"), [
+    nomeLuogo(luogo),
+    `${luogo.lat.toFixed(4)}, ${luogo.lng.toFixed(4)}`
+  ]);
   el("campo-citta").value = luogo.citta || "";
   el("campo-paese").value = luogo.paese || "";
   el("firma-pannello").textContent = testoFirma(luogo);
-  mostraGruppi({ posto: true, visita: false, azioniVisita: false });
+  mostraGruppi({ posto: true, visita: false, azioniVisita: false, azioniPosto: true });
   mappa.closePopup();
   apriFoglio("pannello");
 
@@ -1926,6 +2233,7 @@ function salva() {
   });
 
   chiudiFogli();
+  spegniPuntoCercato();
   toast(tipoSalvato === "modificaPosto" ? "Posto aggiornato" : "Salvato");
 
   /* La modalità legata a un viaggio resta accesa: si inseriscono
@@ -1994,6 +2302,7 @@ function eliminaPosto(luogoId) {
     toast("Eliminazione non riuscita: " + (e.code || e.message));
   });
 
+  chiudiFogli();
   mappa.closePopup();
   toast("Posto eliminato");
 }
@@ -2056,6 +2365,148 @@ function eliminaViaggio() {
 }
 
 /* ============================================================
+   ELENCO DEI LUOGHI, CON FILTRI
+   ------------------------------------------------------------
+   I filtri agiscono solo su questo elenco. Mappa, contatori e
+   colorazione dei paesi continuano a descrivere l'archivio.
+   ============================================================ */
+
+function apriElencoLuoghi() {
+  preparaFiltri();
+  disegnaElencoLuoghi();
+  apriFoglio("elenco-luoghi");
+}
+
+// I menù dei filtri elencano solo ciò che esiste davvero
+function preparaFiltri() {
+  for (const b of document.querySelectorAll("#filtro-stato .segmento")) {
+    b.classList.toggle("attivo", b.dataset.stato === filtri.stato);
+  }
+
+  const paesi = [...new Set(luoghi.map(l => l.paese).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "it"));
+  const selPaese = el("filtro-paese");
+  selPaese.innerHTML = "";
+  const tuttiP = document.createElement("option");
+  tuttiP.value = ""; tuttiP.textContent = "Tutti";
+  selPaese.appendChild(tuttiP);
+  for (const p of paesi) {
+    const o = document.createElement("option");
+    o.value = p; o.textContent = p;
+    selPaese.appendChild(o);
+  }
+  selPaese.value = paesi.includes(filtri.paese) ? filtri.paese : "";
+  if (selPaese.value !== filtri.paese) filtri.paese = selPaese.value;
+
+  const anni = [...new Set(tappe.map(t => (t.data || "").slice(0, 4)).filter(Boolean))]
+    .sort().reverse();
+  const selAnno = el("filtro-anno");
+  selAnno.innerHTML = "";
+  const tuttiA = document.createElement("option");
+  tuttiA.value = ""; tuttiA.textContent = "Tutti";
+  selAnno.appendChild(tuttiA);
+  for (const a of anni) {
+    const o = document.createElement("option");
+    o.value = a; o.textContent = a;
+    selAnno.appendChild(o);
+  }
+  const senza = document.createElement("option");
+  senza.value = "__senza"; senza.textContent = "Senza data";
+  selAnno.appendChild(senza);
+  selAnno.value = (filtri.anno === "__senza" || anni.includes(filtri.anno))
+    ? filtri.anno : "";
+  if (selAnno.value !== filtri.anno) filtri.anno = selAnno.value;
+}
+
+/* Un posto visitato E desiderato compare in entrambi i filtri
+   di stato: si filtra per quello che il posto contiene, non per
+   il colore che mostra. Quindi la somma dei due può superare il
+   totale, ed è corretto. */
+function luoghiFiltrati() {
+  return luoghi.filter(luogo => {
+    const proprie = tappeDi(luogo.id);
+
+    if (filtri.stato && !proprie.some(t => t.stato === filtri.stato)) return false;
+    if (filtri.paese && (luogo.paese || "") !== filtri.paese) return false;
+
+    if (filtri.anno === "__senza") {
+      if (!proprie.some(t => !t.data)) return false;
+    } else if (filtri.anno) {
+      if (!proprie.some(t => (t.data || "").slice(0, 4) === filtri.anno)) return false;
+    }
+    return true;
+  }).sort((a, b) => nomeLuogo(a).localeCompare(nomeLuogo(b), "it"));
+}
+
+function disegnaElencoLuoghi() {
+  const contenitore = el("righe-luoghi");
+  contenitore.innerHTML = "";
+
+  const elenco = luoghiFiltrati();
+  const filtroAttivo = !!(filtri.stato || filtri.paese || filtri.anno);
+
+  el("testo-conteggio").textContent = luoghi.length
+    ? `${elenco.length} di ${luoghi.length} luoghi`
+    : "Nessun luogo nell'archivio";
+  el("azzera-filtri").classList.toggle("nascosto", !filtroAttivo);
+
+  if (!elenco.length) {
+    const vuoto = document.createElement("div");
+    vuoto.className = "vuoto";
+    vuoto.textContent = luoghi.length
+      ? "Nessun luogo con questi filtri."
+      : "Nessun luogo. Tocca + sulla mappa per il primo.";
+    contenitore.appendChild(vuoto);
+    return;
+  }
+
+  for (const luogo of elenco) {
+    const proprie = tappeDi(luogo.id);
+    const aspetto = aspettoDi(luogo.id);
+
+    const riga = document.createElement("div");
+    riga.className = "riga-elenco";
+
+    const principale = document.createElement("button");
+    principale.className = "principale-riga apribile";
+
+    const conCampione = document.createElement("span");
+    conCampione.className = "con-campione";
+
+    const campione = document.createElement("span");
+    campione.className = "campione " + aspetto.base + (aspetto.doppio ? " doppio" : "");
+    conCampione.appendChild(campione);
+
+    const testo = document.createElement("span");
+    testo.className = "testo-riga";
+    testo.textContent = nomeLuogo(luogo);
+
+    const dettaglio = document.createElement("span");
+    dettaglio.className = "secondario";
+    const date = proprie.map(t => t.data).filter(Boolean).sort();
+    const pezzi = [];
+    if (luogo.paese) pezzi.push(luogo.paese);
+    pezzi.push(`${proprie.length} ${proprie.length === 1 ? "visita" : "visite"}`);
+    if (date.length) pezzi.push(formattaData(date[date.length - 1]));
+    dettaglio.textContent = pezzi.join(" · ");
+    testo.appendChild(dettaglio);
+
+    conCampione.appendChild(testo);
+    principale.appendChild(conCampione);
+
+    principale.addEventListener("click", () => {
+      const marker = markerPerId.get(luogo.id);
+      chiudiFogli();
+      mappa.flyTo([luogo.lat, luogo.lng], Math.max(mappa.getZoom(), 7), { duration: 1 });
+      if (marker) mappa.once("moveend", () => marker.openPopup());
+    });
+
+    riga.appendChild(principale);
+    contenitore.appendChild(riga);
+  }
+}
+
+/* ============================================================
    VIAGGI: ELENCO E SCHEDA
    ------------------------------------------------------------
    L'elenco non è un lusso: un viaggio senza tappe non ha alcun
@@ -2089,7 +2540,7 @@ function disegnaElencoViaggi() {
     riga.className = "riga-elenco";
 
     const principale = document.createElement("button");
-    principale.className = "principale-riga";
+    principale.className = "principale-riga apribile";
     principale.textContent = v.titolo || "Viaggio senza titolo";
 
     const dettaglio = document.createElement("span");
@@ -2154,6 +2605,8 @@ function disegnaTappeDelViaggio() {
     const riga = document.createElement("div");
     riga.className = "riga-elenco";
 
+    /* Niente freccia qui: il tocco non apre una scheda, porta la
+       mappa sul punto. La freccia significa "si apre una scheda". */
     const principale = document.createElement("button");
     principale.className = "principale-riga";
     principale.textContent = nomeLuogo(luogo);
@@ -2167,7 +2620,6 @@ function disegnaTappeDelViaggio() {
     dettaglio.textContent = pezzi.join(" · ");
     principale.appendChild(dettaglio);
 
-    // Porta sulla mappa e apre il posto
     principale.addEventListener("click", () => {
       if (!luogo) return;
       const marker = markerPerId.get(luogo.id);
@@ -2237,9 +2689,17 @@ function nascondiRisultati() {
   box.innerHTML = "";
 }
 
+// Nome breve e leggibile di un risultato di Nominatim
+function nomeBreve(risultato) {
+  if (risultato.name) return risultato.name;
+  return String(risultato.display_name || "").split(",")[0].trim();
+}
+
 async function eseguiRicerca() {
   const testo = el("campo-ricerca").value.trim();
   if (!testo) { nascondiRisultati(); return; }
+
+  spegniPuntoCercato();   // una nuova ricerca annulla quella precedente
 
   const box = el("risultati-ricerca");
   box.innerHTML = "";
@@ -2256,9 +2716,21 @@ async function eseguiRicerca() {
       btn.addEventListener("click", () => {
         nascondiRisultati();
         el("campo-ricerca").value = "";
-        // Porta al punto e si ferma: aggiungere è una scelta a parte
-        mappa.flyTo([parseFloat(r.lat), parseFloat(r.lon)], 9, { duration: 1.2 });
-        toast("Tocca + per aggiungere un luogo qui");
+
+        const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+        const info = datiIndirizzo(r);
+        mappa.flyTo([lat, lng], 9, { duration: 1.2 });
+
+        /* Città e paese arrivano dal risultato stesso: niente
+           seconda chiamata di rete, e nessun disallineamento fra
+           quello che hai cercato e quello che compare nel modulo. */
+        accendiPuntoCercato({
+          lat, lng,
+          nome: nomeBreve(r),
+          citta: info.citta || nomeBreve(r),
+          paese: info.paese,
+          codicePaese: info.codicePaese
+        });
       });
       box.appendChild(btn);
     }
@@ -2280,7 +2752,7 @@ function esportaBackup() {
   });
 
   const contenuto = {
-    app: "atlante-viaggi",
+    app: "gli-animali-viaggiatori",
     versione: VERSIONE_BACKUP,
     esportato: new Date().toISOString(),
     luoghi: luoghi.map(conIstanti),
@@ -2292,7 +2764,7 @@ function esportaBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `atlante-viaggi-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `animali-viaggiatori-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   chiudiFogli();
@@ -2540,7 +3012,7 @@ function preparaMappa() {
   });
 }
 
-// Il posto più vicino al tocco, se entro pochi pixel
+// Il posto più vicino a un punto, se entro pochi pixel di schermo
 function postoVicino(latlng) {
   const punto = mappa.latLngToContainerPoint(latlng);
   let vicino = null, minima = RAGGIO_VICINANZA;
@@ -2577,10 +3049,11 @@ function collegaComandi() {
     nascondiRisultati();
     apriFoglio("menu");
   });
-  el("apri-manutenzione").addEventListener("click", () =>
-    el("corpo-manutenzione").classList.toggle("aperto"));
   el("voce-esci").addEventListener("click", esci);
+  el("voce-luoghi").addEventListener("click", apriElencoLuoghi);
   el("voce-viaggi").addEventListener("click", apriElencoViaggi);
+  el("voce-impostazioni").addEventListener("click", () => apriFoglio("impostazioni"));
+  el("chiudi-impostazioni").addEventListener("click", chiudiFogli);
 
   // Il velo chiude qualunque foglio
   el("velo").addEventListener("click", chiudiFogli);
@@ -2591,11 +3064,39 @@ function collegaComandi() {
   el("elimina-visita").addEventListener("click", () => {
     if (bozza && bozza.tappaId) eliminaVisita(bozza.tappaId);
   });
+  el("elimina-posto").addEventListener("click", () => {
+    if (bozza && bozza.tipo === "modificaPosto") eliminaPosto(bozza.luogoId);
+  });
   el("togli-dal-viaggio").addEventListener("click", togliDalViaggio);
   el("campo-viaggio").addEventListener("change", e => {
     const nuovo = e.target.value === "__nuovo";
     el("campo-nuovo-viaggio").classList.toggle("nascosto", !nuovo);
     if (nuovo) el("titolo-nuovo-viaggio").focus();
+  });
+
+  // Elenco dei luoghi e filtri
+  el("chiudi-elenco-luoghi").addEventListener("click", chiudiFogli);
+  for (const b of document.querySelectorAll("#filtro-stato .segmento")) {
+    b.addEventListener("click", () => {
+      filtri.stato = b.dataset.stato;
+      for (const altro of document.querySelectorAll("#filtro-stato .segmento")) {
+        altro.classList.toggle("attivo", altro === b);
+      }
+      disegnaElencoLuoghi();
+    });
+  }
+  el("filtro-paese").addEventListener("change", e => {
+    filtri.paese = e.target.value;
+    disegnaElencoLuoghi();
+  });
+  el("filtro-anno").addEventListener("change", e => {
+    filtri.anno = e.target.value;
+    disegnaElencoLuoghi();
+  });
+  el("azzera-filtri").addEventListener("click", () => {
+    filtri = { stato: "", paese: "", anno: "" };
+    preparaFiltri();
+    disegnaElencoLuoghi();
   });
 
   // Viaggi
@@ -2618,6 +3119,14 @@ function collegaComandi() {
   });
   el("spegni-viaggio").addEventListener("click", () => evidenziaViaggio(null));
 
+  // Etichetta del punto cercato
+  el("testo-aggiungi").addEventListener("click", aggiungiDalPuntoCercato);
+  el("spegni-aggiungi").addEventListener("click", () => {
+    spegniPuntoCercato();
+    // Se l'inserimento era acceso, il suo promemoria torna visibile
+    impostaModalitaInserimento(modalitaInserimento, viaggioPerInserimento);
+  });
+
   // Ricerca
   el("bottone-ricerca").addEventListener("click", eseguiRicerca);
   el("campo-ricerca").addEventListener("keydown", e => { if (e.key === "Enter") eseguiRicerca(); });
@@ -2637,6 +3146,10 @@ function collegaComandi() {
   document.addEventListener("keydown", e => {
     if (e.key !== "Escape") return;
     if (foglioAperto) chiudiFogli();
+    else if (puntoCercato) {
+      spegniPuntoCercato();
+      impostaModalitaInserimento(modalitaInserimento, viaggioPerInserimento);
+    }
     else if (modalitaInserimento) impostaModalitaInserimento(false);
     else if (viaggioSelezionato) evidenziaViaggio(null);
     else nascondiRisultati();
@@ -2679,7 +3192,7 @@ function avvia() {
       aggiornaContatori();
       aggiornaLegenda();
       aggiornaEtichettaViaggio();
-      aggiornaConteggioViaggi();
+      aggiornaConteggiMenu();
       mostraAccesso(true);
     }
   });
