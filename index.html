@@ -770,6 +770,97 @@
   .con-campione .testo-riga { min-width: 0; flex: 1; }
 
   /* ==========================================================
+     COLLEGAMENTI ESTERNI
+     ------------------------------------------------------------
+     La freccia obliqua ↗ significa "si esce dall'app". È diversa
+     dalla freccia › di proposito: quella apre una scheda qui
+     dentro, questa apre il browser.
+     ========================================================== */
+  .riga-elenco > a.collegamento {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 9px;
+    color: var(--verde-scuro);
+    font-size: 15px;
+    text-decoration: none;
+  }
+  .riga-elenco > a.collegamento:hover { background: #f4f6f5; }
+
+  /* Nei pannelli il link si mostra per esteso: c'è lo spazio,
+     e sapere dove si sta andando prima di toccare è utile. */
+  a.apri-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: -6px;
+    margin-bottom: 12px;
+    max-width: 100%;
+    color: var(--verde-scuro);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  a.apri-link:hover { text-decoration: underline; }
+
+  /* ==========================================================
+     ISTRUZIONI
+     ------------------------------------------------------------
+     Quattro schede, una alla volta. I campioni colorati sono gli
+     stessi elementi dell'app: se un domani cambiano i colori, le
+     istruzioni si aggiornano da sole invece di mentire.
+     ========================================================== */
+  .scheda-istruzioni p {
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0 0 10px;
+  }
+  .scheda-istruzioni p:last-child { margin-bottom: 0; }
+  .scheda-istruzioni .voce-spiegata {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bordo);
+  }
+  .scheda-istruzioni .voce-spiegata:last-child { border-bottom: none; }
+  .scheda-istruzioni .voce-spiegata .campione { margin-top: 3px; }
+  .scheda-istruzioni .tasto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--verde);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    vertical-align: -5px;
+  }
+  .scheda-istruzioni .tasto.scuro { background: var(--inchiostro); }
+
+  #punti-istruzioni {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    padding: 14px 0 2px;
+  }
+  #punti-istruzioni .punto {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--bordo);
+  }
+  #punti-istruzioni .punto.attivo { background: var(--verde); }
+
+  /* ==========================================================
      POPUP DEL POSTO
      ========================================================== */
   .popup-posto { font-size: 14px; min-width: 240px; }
@@ -924,6 +1015,11 @@
     <span class="spiega" id="conteggio-viaggi">Nessun viaggio</span>
   </button>
 
+  <button class="voce-menu" id="voce-istruzioni">
+    Istruzioni
+    <span class="spiega">Come funziona l'app, in quattro schede.</span>
+  </button>
+
   <button class="voce-menu" id="voce-impostazioni">
     Impostazioni
     <span class="spiega">Backup e informazioni sull'app.</span>
@@ -953,10 +1049,81 @@
     <input type="file" id="file-import" accept=".json,application/json" hidden>
   </div>
 
-  <div id="versione-app">Gli animali viaggiatori 3.3.0</div>
+  <div id="versione-app">Gli animali viaggiatori 3.4.0</div>
 
   <div class="azioni">
     <button class="secondaria" id="chiudi-impostazioni">Chiudi</button>
+  </div>
+</div>
+
+<!-- ======================== ISTRUZIONI ======================== -->
+<div class="foglio" id="istruzioni">
+  <h2>Come funziona</h2>
+  <div class="sottotesto" id="passo-istruzioni">1 di 4</div>
+
+  <section class="scheda-istruzioni" data-passo="1">
+    <p><strong>Una mappa per due.</strong> Questa mappa è condivisa con
+    <span id="nome-altro-istruzioni">l'altra persona</span>: quello che aggiungi
+    o modifichi compare anche dall'altra parte, da solo. Non ci sono due copie
+    da tenere allineate.</p>
+    <p>Ogni luogo, viaggio e visita porta la firma di chi l'ha aggiunto e di chi
+    l'ha modificato per ultimo.</p>
+    <p>Senza rete l'app continua a funzionare: puoi consultare quello che hai già
+    e continuare a scrivere. Le modifiche partono da sole quando torna la
+    connessione. Il pallino accanto al menù diventa ambra finché sei scollegato.</p>
+  </section>
+
+  <section class="scheda-istruzioni nascosto" data-passo="2">
+    <p><strong>Aggiungere un luogo.</strong> Ci sono due strade.</p>
+    <p>Il bottone <span class="tasto">+</span> in basso a destra accende
+    l'inserimento; poi tocchi il punto sulla mappa. Finché non lo accendi il
+    tocco non crea nulla, così non nascono posti per sbaglio.</p>
+    <p>Oppure cerchi il nome nella casella in alto. Scegli il risultato, la mappa
+    ci vola sopra e compare <em>Aggiungi qui</em>: città e paese arrivano già
+    compilati, e le coordinate sono quelle del posto, non del centro dello
+    schermo.</p>
+    <p>Se il punto cade sopra un posto che c'è già, l'app te lo dice e propone di
+    aggiungere una visita a quello invece di creare un doppione.</p>
+  </section>
+
+  <section class="scheda-istruzioni nascosto" data-passo="3">
+    <p><strong>Verde e ambra.</strong> Il colore del segnaposto dice cosa
+    contiene il posto.</p>
+    <div class="voce-spiegata">
+      <span class="campione visitato"></span>
+      <span>Verde: ci sei stato.</span>
+    </div>
+    <div class="voce-spiegata">
+      <span class="campione desiderio"></span>
+      <span>Ambra: ci vuoi andare.</span>
+    </div>
+    <div class="voce-spiegata">
+      <span class="campione visitato doppio"></span>
+      <span>Verde con anello ambra: ci sei stato e ci vuoi tornare. Il verde
+      prevale perché esserci stato è un fatto, che un desiderio non annulla.</span>
+    </div>
+    <p style="margin-top:12px">Il numerino in alto a destra compare da due visite
+    in su. I paesi si colorano da soli: più scuro dove hai visitato più posti
+    diversi — cinque ritorni nella stessa città contano uno.</p>
+  </section>
+
+  <section class="scheda-istruzioni nascosto" data-passo="4">
+    <p><strong>I viaggi.</strong> Un viaggio raccoglie più tappe. Si creano e si
+    riaprono dal menù <span class="tasto scuro">☰</span>, voce <em>Viaggi</em>.</p>
+    <p>Aprendone uno, le sue tappe si accendono sulla mappa con un anello scuro, e
+    il titolo resta in alto finché non lo spegni.</p>
+    <p><em>Aggiungi tappa</em> tiene acceso l'inserimento tappa dopo tappa, senza
+    ripremere ogni volta il <span class="tasto">+</span>.</p>
+    <p>Una visita può anche stare fuori da ogni viaggio: basta lasciare
+    <em>Nessuno</em> nel campo Viaggio. E le date del viaggio lasciate vuote
+    vengono ricavate dalle date delle tappe.</p>
+  </section>
+
+  <div id="punti-istruzioni"></div>
+
+  <div class="azioni">
+    <button class="secondaria" id="istruzioni-indietro">Chiudi</button>
+    <button class="principale" id="istruzioni-avanti">Avanti</button>
   </div>
 </div>
 
@@ -1032,6 +1199,8 @@
     <label for="campo-link-viaggio">Link</label>
     <input id="campo-link-viaggio" type="url" placeholder="https://…">
   </div>
+  <a class="apri-link nascosto" id="apri-link-viaggio"
+     target="_blank" rel="noopener noreferrer"></a>
 
   <div id="blocco-tappe">
     <span class="etichetta-blocco">Tappe</span>
@@ -1101,6 +1270,8 @@
       <label for="campo-link">Link</label>
       <input id="campo-link" type="url" placeholder="https://…">
     </div>
+    <a class="apri-link nascosto" id="apri-link-visita"
+       target="_blank" rel="noopener noreferrer"></a>
   </div>
 
   <div class="firma-riga" id="firma-pannello"></div>
@@ -1353,6 +1524,71 @@ function formattaData(iso) {
   if (!iso) return "";
   const [a, m, g] = iso.split("-");
   return `${g}/${m}/${a}`;
+}
+
+/* ============================================================
+   COLLEGAMENTI
+   ------------------------------------------------------------
+   Un indirizzo scritto a mano non è ancora un indirizzo valido.
+   Prima di costruire un collegamento si controlla che sia
+   http o https: uno schema diverso — "javascript:" per dire —
+   sarebbe un buco di sicurezza. Il controllo serve anche se ci
+   si fida di chi scrive, perché un backup importato può
+   contenere qualunque cosa.
+   ============================================================ */
+
+function urlSicuro(testo) {
+  const grezzo = String(testo || "").trim();
+  if (!grezzo) return null;
+
+  // Chi incolla "www.qualcosa.it" intende https://www.qualcosa.it
+  const conSchema = /^[a-z][a-z0-9+.-]*:\/\//i.test(grezzo)
+    ? grezzo : "https://" + grezzo;
+
+  let url;
+  try { url = new URL(conSchema); } catch (e) { return null; }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (!url.hostname) return null;
+  return url;
+}
+
+// Il dominio basta: un indirizzo intero sfonda il popup
+function etichettaLink(url) {
+  return url.hostname.replace(/^www\./, "");
+}
+
+/* La freccia obliqua per le righe strette: popup del posto ed
+   elenco delle tappe. Restituisce null se non c'è link valido,
+   così chi chiama non deve controllare due volte. */
+function creaFrecciaLink(testo) {
+  const url = urlSicuro(testo);
+  if (!url) return null;
+
+  const a = document.createElement("a");
+  a.className = "collegamento";
+  a.href = url.href;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.textContent = "↗";
+  a.title = etichettaLink(url);
+  a.setAttribute("aria-label", "Apri " + etichettaLink(url));
+  return a;
+}
+
+/* Nei pannelli il collegamento si aggiorna mentre scrivi, senza
+   aspettare il salvataggio: incolli e vedi subito se è buono. */
+function aggiornaAperturaLink(idCampo, idLink) {
+  const collegamento = el(idLink);
+  const url = urlSicuro(el(idCampo).value);
+
+  if (!url) {
+    collegamento.classList.add("nascosto");
+    collegamento.removeAttribute("href");
+    return;
+  }
+  collegamento.href = url.href;
+  collegamento.textContent = "↗ Apri " + etichettaLink(url);
+  collegamento.classList.remove("nascosto");
 }
 
 function nomeDi(uid) {
@@ -1624,6 +1860,9 @@ function contenutoPopup(luogo) {
       laterale.disabled = true;
     }
     riga.appendChild(laterale);
+
+    const freccia = creaFrecciaLink(t.link);
+    if (freccia) riga.appendChild(freccia);
 
     elenco.appendChild(riga);
   }
@@ -2089,6 +2328,7 @@ function svuotaCampiVisita() {
   el("campo-data").value = "";
   el("campo-note").value = "";
   el("campo-link").value = "";
+  aggiornaAperturaLink("campo-link", "apri-link-visita");
 }
 
 /* NUOVO POSTO con la sua prima visita.
@@ -2159,6 +2399,7 @@ function apriVisita(tappaId) {
   el("campo-data").value = tappa.data || "";
   el("campo-note").value = tappa.note || "";
   el("campo-link").value = tappa.link || "";
+  aggiornaAperturaLink("campo-link", "apri-link-visita");
   preparaSelettoreViaggi(tappa.viaggioId);
   el("firma-pannello").textContent = testoFirma(tappa);
   el("togli-dal-viaggio").classList.toggle("nascosto", !tappa.viaggioId);
@@ -2627,6 +2868,7 @@ function apriSchedaViaggio(id) {
   el("campo-fine").value = viaggio ? (viaggio.dataFine || "") : "";
   el("campo-note-viaggio").value = viaggio ? (viaggio.note || "") : "";
   el("campo-link-viaggio").value = viaggio ? (viaggio.link || "") : "";
+  aggiornaAperturaLink("campo-link-viaggio", "apri-link-viaggio");
   el("firma-viaggio").textContent = viaggio ? testoFirma(viaggio) : "";
 
   el("azioni-viaggio-esistente").classList.toggle("nascosto", !viaggio);
@@ -2691,8 +2933,61 @@ function disegnaTappeDelViaggio() {
     laterale.addEventListener("click", () => apriVisita(t.id));
     riga.appendChild(laterale);
 
+    const freccia = creaFrecciaLink(t.link);
+    if (freccia) riga.appendChild(freccia);
+
     contenitore.appendChild(riga);
   }
+}
+
+/* ============================================================
+   ISTRUZIONI
+   ------------------------------------------------------------
+   Quattro schede, una alla volta, dentro il foglio che c'è già.
+   Non compaiono da sole: si aprono dal menù e basta. Per questo
+   non c'è nessuna preferenza da salvare da nessuna parte.
+   ============================================================ */
+
+const TOTALE_ISTRUZIONI = 4;
+let passoIstruzioni = 1;
+
+function apriIstruzioni() {
+  passoIstruzioni = 1;
+  el("nome-altro-istruzioni").textContent = nomeAltroUtente();
+  mostraPassoIstruzioni();
+  apriFoglio("istruzioni");
+}
+
+function mostraPassoIstruzioni() {
+  for (const scheda of document.querySelectorAll("#istruzioni .scheda-istruzioni")) {
+    scheda.classList.toggle("nascosto",
+      Number(scheda.dataset.passo) !== passoIstruzioni);
+  }
+
+  el("passo-istruzioni").textContent = `${passoIstruzioni} di ${TOTALE_ISTRUZIONI}`;
+
+  const punti = el("punti-istruzioni");
+  punti.innerHTML = "";
+  for (let i = 1; i <= TOTALE_ISTRUZIONI; i++) {
+    const punto = document.createElement("span");
+    punto.className = "punto" + (i === passoIstruzioni ? " attivo" : "");
+    punti.appendChild(punto);
+  }
+
+  // I bottoni cambiano nome agli estremi: niente vicoli ciechi
+  el("istruzioni-indietro").textContent = passoIstruzioni === 1 ? "Chiudi" : "Indietro";
+  el("istruzioni-avanti").textContent =
+    passoIstruzioni === TOTALE_ISTRUZIONI ? "Ho capito" : "Avanti";
+
+  // Cambiando scheda si torna in cima, altrimenti si resta a metà
+  el("istruzioni").scrollTop = 0;
+}
+
+function scorriIstruzioni(verso) {
+  const nuovo = passoIstruzioni + verso;
+  if (nuovo < 1 || nuovo > TOTALE_ISTRUZIONI) { chiudiFogli(); return; }
+  passoIstruzioni = nuovo;
+  mostraPassoIstruzioni();
 }
 
 function salvaViaggio() {
@@ -3108,6 +3403,9 @@ function collegaComandi() {
   el("voce-esci").addEventListener("click", esci);
   el("voce-luoghi").addEventListener("click", apriElencoLuoghi);
   el("voce-viaggi").addEventListener("click", apriElencoViaggi);
+  el("voce-istruzioni").addEventListener("click", apriIstruzioni);
+  el("istruzioni-indietro").addEventListener("click", () => scorriIstruzioni(-1));
+  el("istruzioni-avanti").addEventListener("click", () => scorriIstruzioni(1));
   el("voce-impostazioni").addEventListener("click", () => apriFoglio("impostazioni"));
   el("chiudi-impostazioni").addEventListener("click", chiudiFogli);
 
@@ -3129,6 +3427,10 @@ function collegaComandi() {
     el("campo-nuovo-viaggio").classList.toggle("nascosto", !nuovo);
     if (nuovo) el("titolo-nuovo-viaggio").focus();
   });
+  el("campo-link").addEventListener("input",
+    () => aggiornaAperturaLink("campo-link", "apri-link-visita"));
+  el("campo-link-viaggio").addEventListener("input",
+    () => aggiornaAperturaLink("campo-link-viaggio", "apri-link-viaggio"));
 
   // Elenco dei luoghi e filtri
   el("chiudi-elenco-luoghi").addEventListener("click", chiudiFogli);
